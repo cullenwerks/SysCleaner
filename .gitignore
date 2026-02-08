@@ -1,0 +1,6 @@
+syscleaner
+syscleaner.exe
+*.exe
+*.dll
+*.so
+*.dylib
