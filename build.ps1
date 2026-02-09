@@ -21,12 +21,12 @@ if ($WithIcon -and (Test-Path "assets/icon.ico")) {
     Write-Host "Compiling icon resource..." -ForegroundColor Yellow
     rsrc -ico assets/icon.ico -o rsrc_windows_amd64.syso
     if ($?) {
-        Write-Host "✓ Icon compiled successfully" -ForegroundColor Green
+        Write-Host "Icon compiled successfully" -ForegroundColor Green
     } else {
-        Write-Host "✗ Icon compilation failed (continuing without icon)" -ForegroundColor Yellow
+        Write-Host "Icon compilation failed (continuing without icon)" -ForegroundColor Yellow
     }
 } elseif ($WithIcon) {
-    Write-Host "⚠ Icon file not found at assets/icon.ico" -ForegroundColor Yellow
+    Write-Host "Icon file not found at assets/icon.ico" -ForegroundColor Yellow
     Write-Host "  Building without custom icon..." -ForegroundColor Yellow
     Write-Host "  See assets/README.md for icon creation guide" -ForegroundColor Yellow
 }
@@ -46,7 +46,7 @@ if ($Debug) {
 if (Test-Path $exeName) {
     $size = (Get-Item $exeName).Length / 1MB
     Write-Host ""
-    Write-Host "✓ Build successful!" -ForegroundColor Green
+    Write-Host "Build successful!" -ForegroundColor Green
     Write-Host "  Executable: $exeName" -ForegroundColor Cyan
     Write-Host "  Size: $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
     Write-Host "  Version: $Version" -ForegroundColor Cyan
@@ -54,7 +54,7 @@ if (Test-Path $exeName) {
     Write-Host "Run with: .\$exeName" -ForegroundColor Green
 } else {
     Write-Host ""
-    Write-Host "✗ Build failed!" -ForegroundColor Red
+    Write-Host "Build failed!" -ForegroundColor Red
     Write-Host "  Check the error messages above" -ForegroundColor Red
     exit 1
 }
