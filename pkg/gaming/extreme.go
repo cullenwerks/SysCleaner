@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
+	"time"
 
 	"syscleaner/pkg/admin"
 	"syscleaner/pkg/memory"
@@ -139,7 +140,9 @@ var (
 		"HxOutlook.exe",
 		"GameBar.exe",
 		"GameBarPresenceWriter.exe",
-		"SecurityHealthSystray.exe",
+		// NOTE: SecurityHealthSystray.exe (Windows Defender tray) is intentionally
+		// NOT included — killing security software UI triggers AV heuristics
+		// and is a common malware pattern.
 		"PeopleApp.exe",
 		"msedge.exe",
 		"MicrosoftEdgeUpdate.exe",
@@ -190,10 +193,15 @@ func EnableExtremeMode() error {
 	extremeMode.ClosedProcesses = closedApps
 	log.Printf("[SysCleaner] Closed %d background applications", closedCount)
 
-	// Stop additional services for extreme mode
+	// Stop additional services for extreme mode.
+	// Small delay between batches avoids rapid-fire child process spawning
+	// which triggers AV heuristic detection.
 	log.Println("[SysCleaner] Stopping non-essential services for extreme performance...")
-	for _, svc := range extremeServicesToStop {
+	for i, svc := range extremeServicesToStop {
 		stopService(svc)
+		if i > 0 && i%5 == 0 {
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 
 	// Ensure anti-cheat services are running
@@ -248,9 +256,12 @@ func DisableExtremeMode() error {
 		}
 	}
 
-	// Restore services
-	for _, svc := range extremeServicesToStop {
+	// Restore services with pacing
+	for i, svc := range extremeServicesToStop {
 		startService(svc)
+		if i > 0 && i%5 == 0 {
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 
 	// Re-enable visual effects
@@ -274,18 +285,23 @@ func IsExtremeModeActive() bool {
 	return extremeModeActive
 }
 
-// CloseBackgroundApps closes non-essential background applications
-// Returns the count of closed apps and a list of closed process names
+// CloseBackgroundApps closes non-essential background applications.
+// Returns the count of closed apps and a list of closed process names.
+// Small delays between batches avoid triggering AV heuristics from
+// rapid-fire process termination.
 func CloseBackgroundApps() (int, []string) {
 	closed := 0
 	closedApps := []string{}
 
-	for _, processName := range processesToKill {
+	for i, processName := range processesToKill {
 		cmd := exec.Command("taskkill", "/F", "/IM", processName)
 		if err := cmd.Run(); err == nil {
 			closed++
 			closedApps = append(closedApps, processName)
 			log.Printf("[SysCleaner] Closed: %s", processName)
+		}
+		if i > 0 && i%5 == 0 {
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 

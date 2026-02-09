@@ -597,7 +597,9 @@ func cleanEventLogs(opts CleanOptions) CleanResult {
 		return result
 	}
 
-	logs := []string{"System", "Application", "Security"}
+	// NOTE: Security event log is intentionally excluded — clearing it is an
+	// anti-forensics indicator that triggers AV heuristics.
+	logs := []string{"System", "Application"}
 	for _, logName := range logs {
 		cmd := exec.Command("wevtutil", "cl", logName)
 		if err := cmd.Run(); err != nil {

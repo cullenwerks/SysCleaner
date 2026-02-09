@@ -15,7 +15,10 @@ var unnecessaryStartup = []string{
 }
 
 func getSysProcAttr() *syscall.SysProcAttr {
-	return &syscall.SysProcAttr{HideWindow: true}
+	// NOTE: Do NOT set HideWindow: true — it triggers AV heuristics
+	// (Trojan:Win32/Bearfoos.B!ml) because hidden child processes are
+	// a common malware pattern.
+	return &syscall.SysProcAttr{}
 }
 
 func optimizeStartupPlatform() StartupResult {

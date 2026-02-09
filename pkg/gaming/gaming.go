@@ -143,13 +143,14 @@ func Disable() error {
 		runCmd("powercfg", "/setactive", "381b4222-f694-41f0-9685-ff5bb260df2e")
 	}
 
-	// Restore process priorities
+	// Restore process priorities using native Windows API
 	log.Println("[SysCleaner] Restoring process priorities...")
 	for pid := range originalPriority {
 		if runtime.GOOS == "windows" {
-			runCmd("wmic", "process", "where",
-				fmt.Sprintf("processid=%d", pid),
-				"CALL", "setpriority", "32")
+			// NORMAL_PRIORITY_CLASS = 0x20
+			if err := setProcessPriorityNative(uint32(pid), 0x20); err != nil {
+				log.Printf("[SysCleaner] Failed to restore priority for PID %d: %v", pid, err)
+			}
 		}
 	}
 	originalPriority = make(map[int32]int32)
@@ -268,20 +269,25 @@ func boostProcessPriority(p *process.Process) {
 	if runtime.GOOS == "windows" {
 		name, _ := p.Name()
 		log.Printf("[SysCleaner] Boosting priority for game process: %s (PID: %d)", name, p.Pid)
-		runCmd("wmic", "process", "where",
-			fmt.Sprintf("processid=%d", p.Pid),
-			"CALL", "setpriority", "128")
+		// HIGH_PRIORITY_CLASS = 0x80 — use native API instead of wmic to avoid AV heuristics
+		if err := setProcessPriorityNative(uint32(p.Pid), 0x80); err != nil {
+			log.Printf("[SysCleaner] Failed to boost priority for %s: %v", name, err)
+		}
 	}
 }
 
 func stopService(name string) error {
 	log.Printf("[SysCleaner] Requesting service stop: %s", name)
-	return runCmd("net", "stop", name)
+	// Use native SCM API instead of "net stop" to avoid spawning child
+	// processes that trigger AV heuristics.
+	return stopServiceNative(name)
 }
 
 func startService(name string) error {
 	log.Printf("[SysCleaner] Requesting service start: %s", name)
-	return runCmd("net", "start", name)
+	// Use native SCM API instead of "net start" to avoid spawning child
+	// processes that trigger AV heuristics.
+	return startServiceNative(name)
 }
 
 func runCmd(name string, args ...string) error {
