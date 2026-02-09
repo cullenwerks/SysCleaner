@@ -5,6 +5,7 @@ package views
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -44,6 +45,12 @@ func NewExtremeModePanel(w fyne.Window) fyne.CanvasObject {
 	warningText.Wrapping = fyne.TextWrapWord
 	warningText.Alignment = fyne.TextAlignCenter
 
+	// Process whitelist section
+	whitelistSection := createWhitelistSection()
+
+	// Game profile selector
+	gameProfileSection := createGameProfileSection()
+
 	// Game launchers
 	launcherSection := createGameLaunchers(w)
 
@@ -68,6 +75,13 @@ func NewExtremeModePanel(w fyne.Window) fyne.CanvasObject {
 		widget.NewSeparator(),
 		warningText,
 		widget.NewSeparator(),
+		widget.NewLabelWithStyle("Process Whitelist", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewLabel("These processes will NOT be killed when Extreme Mode activates:"),
+		whitelistSection,
+		widget.NewSeparator(),
+		widget.NewLabelWithStyle("Game Optimization Profile", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		gameProfileSection,
+		widget.NewSeparator(),
 		widget.NewLabelWithStyle("Game Launchers", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		launcherSection,
 	)
@@ -89,8 +103,9 @@ func (p *extremeModePanel) toggleExtremeMode() {
 			"This will:\n\n"+
 				"  - Stop Windows Explorer (no desktop/taskbar)\n"+
 				"  - Stop all non-essential services\n"+
+				"  - Close background apps (respecting whitelist)\n"+
 				"  - Maximize game performance\n\n"+
-				"You can only launch games from this window.\n\nContinue?",
+				"You can only launch games from this window.\nContinue?",
 			func(confirmed bool) {
 				if confirmed {
 					if err := gaming.EnableExtremeMode(); err != nil {
@@ -119,6 +134,92 @@ func (p *extremeModePanel) updateUI() {
 		p.toggleBtn.SetText("ACTIVATE EXTREME PERFORMANCE MODE")
 		p.toggleBtn.Importance = widget.HighImportance
 	}
+}
+
+func createWhitelistSection() fyne.CanvasObject {
+	processesToKill := gaming.GetProcessesToKill()
+
+	// Common processes users would want to protect
+	commonWhitelist := map[string]bool{
+		"Discord.exe":    true,
+		"DiscordPTB.exe": true,
+		"Spotify.exe":    true,
+	}
+
+	checks := make(map[string]*widget.Check)
+	var grid []fyne.CanvasObject
+
+	for _, proc := range processesToKill {
+		p := proc
+		check := widget.NewCheck(p, func(checked bool) {
+			updateWhitelist(checks)
+		})
+		if commonWhitelist[p] {
+			check.SetChecked(true)
+		}
+		checks[p] = check
+		grid = append(grid, check)
+	}
+
+	// Initialize whitelist from defaults
+	updateWhitelist(checks)
+
+	return container.NewGridWithColumns(4, grid...)
+}
+
+func updateWhitelist(checks map[string]*widget.Check) {
+	var whitelist []string
+	for name, check := range checks {
+		if check.Checked {
+			whitelist = append(whitelist, name)
+		}
+	}
+	gaming.ProcessWhitelist = whitelist
+}
+
+func createGameProfileSection() fyne.CanvasObject {
+	profileLabel := widget.NewLabel("Select a game to auto-configure whitelist and service preservation:")
+	infoLabel := widget.NewLabel("")
+	infoLabel.Wrapping = fyne.TextWrapWord
+
+	options := []string{"None (Manual)"}
+	for _, g := range gaming.PredefinedGames {
+		options = append(options, g.Name)
+	}
+
+	selector := widget.NewSelect(options, func(selected string) {
+		profile := gaming.GetGameProfile(selected)
+		if profile == nil {
+			infoLabel.SetText("Manual configuration - set process whitelist above.")
+			return
+		}
+
+		info := fmt.Sprintf("Game: %s\nCPU Priority: %s", profile.Name, profile.CPUPriority)
+		if len(profile.PreserveProcesses) > 0 {
+			info += fmt.Sprintf("\nAuto-whitelisted: %s", strings.Join(profile.PreserveProcesses, ", "))
+		}
+		if len(profile.PreserveServices) > 0 {
+			info += fmt.Sprintf("\nPreserved services: %s", strings.Join(profile.PreserveServices, ", "))
+		}
+		if profile.Notes != "" {
+			info += fmt.Sprintf("\nNotes: %s", profile.Notes)
+		}
+		infoLabel.SetText(info)
+
+		// Add game's preserved processes to whitelist
+		existing := make(map[string]bool)
+		for _, p := range gaming.ProcessWhitelist {
+			existing[p] = true
+		}
+		for _, p := range profile.PreserveProcesses {
+			if !existing[p] {
+				gaming.ProcessWhitelist = append(gaming.ProcessWhitelist, p)
+			}
+		}
+	})
+	selector.SetSelected("None (Manual)")
+
+	return container.NewVBox(profileLabel, selector, infoLabel)
 }
 
 func createGameLaunchers(w fyne.Window) fyne.CanvasObject {
