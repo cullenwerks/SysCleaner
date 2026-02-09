@@ -8,6 +8,7 @@ syscleaner-dev.exe
 *.dll
 *.so
 *.dylib
+*.syso
 
 # Build output
 /dist/
