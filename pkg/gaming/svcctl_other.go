@@ -15,3 +15,7 @@ func startServiceNative(name string) error {
 func setProcessPriorityNative(pid uint32, priorityClass uint32) error {
 	return fmt.Errorf("process priority not available on this platform")
 }
+
+func setVisualEffectsNative(enable bool) {
+	// Visual effects control is only available on Windows
+}

@@ -189,10 +189,14 @@ You can select specific categories or use group flags like --all, --system, --br
 		fmt.Printf("  Files skipped: %d\n", result.SkippedFiles)
 		fmt.Printf("  Space freed:   %s\n", cleaner.FormatBytes(result.SpaceFreed))
 		fmt.Printf("  Time taken:    %s\n", result.Duration.Round(1e6))
+		if result.LockedFiles > 0 {
+			fmt.Printf("  Skipped (in use): %d\n", result.LockedFiles)
+		}
+		if result.PermissionFiles > 0 {
+			fmt.Printf("  Permission errors: %d\n", result.PermissionFiles)
+		}
 		if len(result.Errors) > 0 {
-			fmt.Printf("  Errors:        %d\n", len(result.Errors))
-		} else {
-			fmt.Println("  Errors:        0")
+			fmt.Printf("  Other errors:  %d\n", len(result.Errors))
 		}
 		fmt.Println()
 		if dryRun {

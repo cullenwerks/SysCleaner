@@ -5,6 +5,7 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"syscleaner/pkg/admin"
@@ -13,15 +14,19 @@ import (
 
 // ExtremeMode holds state for extreme performance mode.
 type ExtremeMode struct {
-	ShellStopped       bool
-	AntiCheatServices  []string
-	ClosedProcesses    []string
-	ramMonitorActive   bool
+	ShellStopped      bool
+	AntiCheatServices []string
+	ClosedProcesses   []string
+	ramMonitorActive  bool
 }
 
 var (
 	extremeModeActive bool
 	extremeMode       ExtremeMode
+
+	// ProcessWhitelist contains process names that should never be killed.
+	// Users can configure this to protect Discord, Steam, etc.
+	ProcessWhitelist []string
 
 	// Anti-cheat services that must NEVER be stopped
 	antiCheatServices = []string{
@@ -37,11 +42,11 @@ var (
 	// These have been verified safe to temporarily stop while gaming
 	extremeServicesToStop = []string{
 		// === Windows Update & Delivery ===
-		"wuauserv",       // Windows Update
-		"UsoSvc",         // Update Orchestrator
-		"BITS",           // Background Intelligent Transfer
-		"DoSvc",          // Delivery Optimization
-		"WaaSMedicSvc",   // Windows Update Medic
+		"wuauserv",     // Windows Update
+		"UsoSvc",       // Update Orchestrator
+		"BITS",         // Background Intelligent Transfer
+		"DoSvc",        // Delivery Optimization
+		"WaaSMedicSvc", // Windows Update Medic
 
 		// === Telemetry & Diagnostics ===
 		"DiagTrack",        // Connected User Experiences and Telemetry
@@ -73,7 +78,7 @@ var (
 		// === Biometrics & Security (non-essential) ===
 		"WbioSrvc",  // Windows Biometric Service
 		"MapsBroker", // Downloaded Maps Manager
-		"lfsvc",     // Geolocation Service
+		"lfsvc",      // Geolocation Service
 
 		// === Phone & Mobile ===
 		"PhoneSvc",  // Phone Service
@@ -87,32 +92,32 @@ var (
 		"RetailDemo", // Retail Demo Service
 
 		// === Miscellaneous ===
-		"DusmSvc",         // Data Usage Service
-		"wisvc",           // Windows Insider Service
-		"icssvc",          // Windows Mobile Hotspot Service
-		"WMPNetworkSvc",   // Windows Media Player Network Sharing
-		"XblAuthManager",  // Xbox Live Auth Manager (disable if not using Xbox services)
-		"XblGameSave",     // Xbox Live Game Save
-		"XboxGipSvc",      // Xbox Accessory Management
-		"XboxNetApiSvc",   // Xbox Live Networking Service
-		"AJRouter",        // AllJoyn Router Service
-		"ALG",             // Application Layer Gateway
-		"IKEEXT",          // IKE and AuthIP IPsec Keying Modules (if not using VPN)
-		"iphlpsvc",        // IP Helper (IPv6 transition - safe if IPv4 only)
-		"SharedAccess",    // Internet Connection Sharing
-		"lmhosts",         // TCP/IP NetBIOS Helper
-		"TrkWks",          // Distributed Link Tracking Client
-		"WpcMonSvc",       // Parental Controls
-		"SEMgrSvc",        // Payments and NFC/SE Manager
-		"SCardSvr",        // Smart Card
-		"ScDeviceEnum",    // Smart Card Device Enumeration
-		"stisvc",          // Windows Image Acquisition (scanner/camera)
-		"FrameServer",     // Windows Camera Frame Server
-		"CDPSvc",          // Connected Devices Platform Service
-		"CDPUserSvc",      // Connected Devices Platform User Service
-		"WpnService",      // Windows Push Notifications System
-		"WpnUserService",  // Windows Push Notifications User Service
-		"BcastDVRUserService", // GameDVR and Broadcast User Service (if not recording)
+		"DusmSvc",              // Data Usage Service
+		"wisvc",                // Windows Insider Service
+		"icssvc",               // Windows Mobile Hotspot Service
+		"WMPNetworkSvc",        // Windows Media Player Network Sharing
+		"XblAuthManager",       // Xbox Live Auth Manager (disable if not using Xbox services)
+		"XblGameSave",          // Xbox Live Game Save
+		"XboxGipSvc",           // Xbox Accessory Management
+		"XboxNetApiSvc",        // Xbox Live Networking Service
+		"AJRouter",             // AllJoyn Router Service
+		"ALG",                  // Application Layer Gateway
+		"IKEEXT",               // IKE and AuthIP IPsec Keying Modules (if not using VPN)
+		"iphlpsvc",             // IP Helper (IPv6 transition - safe if IPv4 only)
+		"SharedAccess",         // Internet Connection Sharing
+		"lmhosts",              // TCP/IP NetBIOS Helper
+		"TrkWks",               // Distributed Link Tracking Client
+		"WpcMonSvc",            // Parental Controls
+		"SEMgrSvc",             // Payments and NFC/SE Manager
+		"SCardSvr",             // Smart Card
+		"ScDeviceEnum",         // Smart Card Device Enumeration
+		"stisvc",               // Windows Image Acquisition (scanner/camera)
+		"FrameServer",          // Windows Camera Frame Server
+		"CDPSvc",               // Connected Devices Platform Service
+		"CDPUserSvc",           // Connected Devices Platform User Service
+		"WpnService",           // Windows Push Notifications System
+		"WpnUserService",       // Windows Push Notifications User Service
+		"BcastDVRUserService",  // GameDVR and Broadcast User Service (if not recording)
 	}
 
 	// Background applications to close in Extreme Mode
@@ -156,6 +161,11 @@ var (
 	}
 )
 
+// GetProcessesToKill returns the list of processes that would be terminated.
+func GetProcessesToKill() []string {
+	return processesToKill
+}
+
 // EnableExtremeMode stops Windows Explorer and non-essential services.
 func EnableExtremeMode() error {
 	if err := admin.RequireElevation("Extreme Performance Mode"); err != nil {
@@ -187,20 +197,18 @@ func EnableExtremeMode() error {
 		AntiCheatServices: antiCheatServices,
 	}
 
-	// Close non-essential background applications
+	// Close non-essential background applications using native API
 	log.Println("[SysCleaner] Closing background applications for extreme performance...")
-	closedCount, closedApps := CloseBackgroundApps()
+	closedCount, closedApps := CloseBackgroundApps(ProcessWhitelist)
 	extremeMode.ClosedProcesses = closedApps
 	log.Printf("[SysCleaner] Closed %d background applications", closedCount)
 
 	// Stop additional services for extreme mode.
-	// Small delay between batches avoids rapid-fire child process spawning
-	// which triggers AV heuristic detection.
 	log.Println("[SysCleaner] Stopping non-essential services for extreme performance...")
 	for i, svc := range extremeServicesToStop {
 		stopService(svc)
-		if i > 0 && i%5 == 0 {
-			time.Sleep(100 * time.Millisecond)
+		if i > 0 && i%3 == 0 {
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
@@ -211,6 +219,8 @@ func EnableExtremeMode() error {
 	}
 
 	// Stop Windows Explorer (Desktop Experience)
+	// Uses taskkill for explorer.exe — native API is inappropriate for shell
+	// processes that auto-restart via Windows Session Manager
 	log.Println("[SysCleaner] Stopping Windows Explorer shell...")
 	if err := stopWindowsExplorer(); err != nil {
 		return fmt.Errorf("failed to stop explorer: %w", err)
@@ -218,13 +228,18 @@ func EnableExtremeMode() error {
 	extremeMode.ShellStopped = true
 
 	// Set ultimate performance power plan
+	// Uses powercfg — no native API equivalent exists
 	runCmd("powercfg", "/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c")
 
-	// Disable visual effects for maximum performance
+	// Disable visual effects for maximum performance using native registry API
 	disableVisualEffects()
 
 	// Start RAM monitoring for automatic standby trimming
 	log.Println("[SysCleaner] Starting continuous RAM monitoring...")
+	if err := memory.EnableSeProfileSingleProcessPrivilege(); err != nil {
+		log.Printf("[SysCleaner] Warning: Failed to enable memory privileges: %v", err)
+		log.Println("[SysCleaner] RAM trimming may not work correctly. Run as Administrator.")
+	}
 	memory.StartContinuousMonitor(nil)
 	extremeMode.ramMonitorActive = true
 
@@ -259,8 +274,8 @@ func DisableExtremeMode() error {
 	// Restore services with pacing
 	for i, svc := range extremeServicesToStop {
 		startService(svc)
-		if i > 0 && i%5 == 0 {
-			time.Sleep(100 * time.Millisecond)
+		if i > 0 && i%3 == 0 {
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
@@ -287,21 +302,32 @@ func IsExtremeModeActive() bool {
 
 // CloseBackgroundApps closes non-essential background applications.
 // Returns the count of closed apps and a list of closed process names.
-// Small delays between batches avoid triggering AV heuristics from
-// rapid-fire process termination.
-func CloseBackgroundApps() (int, []string) {
+// Uses native TerminateProcess API instead of taskkill.exe to avoid
+// triggering AV heuristics from rapid child process spawning.
+// Processes in the whitelist are skipped.
+func CloseBackgroundApps(whitelist []string) (int, []string) {
 	closed := 0
 	closedApps := []string{}
 
+	whitelistMap := make(map[string]bool)
+	for _, name := range whitelist {
+		whitelistMap[strings.ToLower(name)] = true
+	}
+
 	for i, processName := range processesToKill {
-		cmd := exec.Command("taskkill", "/F", "/IM", processName)
-		if err := cmd.Run(); err == nil {
+		if whitelistMap[strings.ToLower(processName)] {
+			log.Printf("[SysCleaner] Skipping whitelisted process: %s", processName)
+			continue
+		}
+
+		if err := terminateProcessByName(processName); err == nil {
 			closed++
 			closedApps = append(closedApps, processName)
 			log.Printf("[SysCleaner] Closed: %s", processName)
 		}
-		if i > 0 && i%5 == 0 {
-			time.Sleep(100 * time.Millisecond)
+		// Batch delay: 500ms every 3 processes to avoid AV heuristics
+		if i > 0 && i%3 == 0 {
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
@@ -309,6 +335,8 @@ func CloseBackgroundApps() (int, []string) {
 }
 
 func stopWindowsExplorer() error {
+	// Uses taskkill for explorer.exe — explorer is a shell process that
+	// requires special handling; native TerminateProcess may not cleanly stop it
 	return runCmd("taskkill", "/F", "/IM", "explorer.exe")
 }
 
@@ -317,18 +345,14 @@ func startWindowsExplorer() error {
 	return cmd.Start()
 }
 
+// disableVisualEffects uses native registry API on Windows, falls back to reg.exe
 func disableVisualEffects() {
-	runCmd("reg", "add", "HKCU\\Control Panel\\Desktop", "/v", "UserPreferencesMask",
-		"/t", "REG_BINARY", "/d", "9012038010000000", "/f")
-	runCmd("reg", "add", "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-		"/v", "EnableTransparency", "/t", "REG_DWORD", "/d", "0", "/f")
+	setVisualEffectsNative(false)
 }
 
+// enableVisualEffects uses native registry API on Windows, falls back to reg.exe
 func enableVisualEffects() {
-	runCmd("reg", "add", "HKCU\\Control Panel\\Desktop", "/v", "UserPreferencesMask",
-		"/t", "REG_BINARY", "/d", "9e3e078012000000", "/f")
-	runCmd("reg", "add", "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-		"/v", "EnableTransparency", "/t", "REG_DWORD", "/d", "1", "/f")
+	setVisualEffectsNative(true)
 }
 
 // GetExtremeModeStats returns information about what extreme mode has done

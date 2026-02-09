@@ -167,8 +167,17 @@ func NewCleanPanel() fyne.CanvasObject {
 				result.FilesDeleted,
 				cleaner.FormatBytes(result.SpaceFreed),
 				result.Duration)
-			if len(result.Errors) > 0 {
-				text += fmt.Sprintf("\n\nErrors: %d (some files could not be removed)", len(result.Errors))
+			if result.LockedFiles > 0 || result.PermissionFiles > 0 || len(result.Errors) > 0 {
+				text += "\n"
+				if result.LockedFiles > 0 {
+					text += fmt.Sprintf("\nSkipped (in use): %d", result.LockedFiles)
+				}
+				if result.PermissionFiles > 0 {
+					text += fmt.Sprintf("\nPermission errors: %d", result.PermissionFiles)
+				}
+				if len(result.Errors) > 0 {
+					text += fmt.Sprintf("\nOther errors: %d", len(result.Errors))
+				}
 			}
 			resultText.SetText(text)
 		}()

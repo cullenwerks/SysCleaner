@@ -4,9 +4,11 @@ package gaming
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/registry"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 )
@@ -95,4 +97,47 @@ func setProcessPriorityNative(pid uint32, priorityClass uint32) error {
 		return fmt.Errorf("failed to set priority for process %d: %w", pid, err)
 	}
 	return nil
+}
+
+// setVisualEffectsNative toggles Windows visual effects using native registry API
+// instead of spawning reg.exe child processes.
+func setVisualEffectsNative(enable bool) {
+	// Set UserPreferencesMask in HKCU\Control Panel\Desktop
+	key, err := registry.OpenKey(registry.CURRENT_USER,
+		`Control Panel\Desktop`, registry.SET_VALUE)
+	if err != nil {
+		log.Printf("[SysCleaner] Failed to open Desktop registry key: %v", err)
+		return
+	}
+
+	var mask []byte
+	if enable {
+		// Default visual effects enabled
+		mask = []byte{0x9e, 0x3e, 0x07, 0x80, 0x12, 0x00, 0x00, 0x00}
+	} else {
+		// Minimal visual effects for performance
+		mask = []byte{0x90, 0x12, 0x03, 0x80, 0x10, 0x00, 0x00, 0x00}
+	}
+	if err := key.SetBinaryValue("UserPreferencesMask", mask); err != nil {
+		log.Printf("[SysCleaner] Failed to set UserPreferencesMask: %v", err)
+	}
+	key.Close()
+
+	// Set EnableTransparency in Themes\Personalize
+	themeKey, _, err := registry.CreateKey(registry.CURRENT_USER,
+		`SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize`,
+		registry.SET_VALUE)
+	if err != nil {
+		log.Printf("[SysCleaner] Failed to open Themes registry key: %v", err)
+		return
+	}
+	defer themeKey.Close()
+
+	var transparencyVal uint32
+	if enable {
+		transparencyVal = 1
+	}
+	if err := themeKey.SetDWordValue("EnableTransparency", transparencyVal); err != nil {
+		log.Printf("[SysCleaner] Failed to set EnableTransparency: %v", err)
+	}
 }

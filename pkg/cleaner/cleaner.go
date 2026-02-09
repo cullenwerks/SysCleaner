@@ -53,13 +53,58 @@ type CleanOptions struct {
 // ProgressFunc is called to report progress during cleaning
 type ProgressFunc func(category string, current, total int64)
 
+// ErrorType categorizes cleaning errors for better user feedback
+type ErrorType int
+
+const (
+	ErrorLocked           ErrorType = iota // File in use
+	ErrorPermissionDenied                  // Access denied
+	ErrorTimeout                           // Operation timed out
+	ErrorNotFound                          // File not found
+	ErrorOther                             // Other errors
+)
+
+// CleanError is a categorized error for cleaning operations
+type CleanError struct {
+	Path string
+	Type ErrorType
+	Err  error
+}
+
+func (e *CleanError) Error() string {
+	return fmt.Sprintf("%s: %v", e.Path, e.Err)
+}
+
+// classifyError categorizes an OS error into a CleanError type
+func classifyError(path string, err error) *CleanError {
+	ce := &CleanError{Path: path, Err: err}
+	errMsg := strings.ToLower(err.Error())
+	switch {
+	case os.IsPermission(err):
+		ce.Type = ErrorPermissionDenied
+	case os.IsNotExist(err):
+		ce.Type = ErrorNotFound
+	case strings.Contains(errMsg, "used by another process") ||
+		strings.Contains(errMsg, "locked") ||
+		strings.Contains(errMsg, "sharing violation"):
+		ce.Type = ErrorLocked
+	case strings.Contains(errMsg, "timeout"):
+		ce.Type = ErrorTimeout
+	default:
+		ce.Type = ErrorOther
+	}
+	return ce
+}
+
 // CleanResult holds the result of a cleaning operation
 type CleanResult struct {
-	FilesDeleted int64
-	SkippedFiles int64
-	SpaceFreed   int64
-	Duration     time.Duration
-	Errors       []error
+	FilesDeleted    int64
+	SkippedFiles    int64
+	SpaceFreed      int64
+	LockedFiles     int64
+	PermissionFiles int64
+	Duration        time.Duration
+	Errors          []error
 }
 
 const (
@@ -171,6 +216,8 @@ func (r *CleanResult) merge(other CleanResult) {
 	r.FilesDeleted += other.FilesDeleted
 	r.SkippedFiles += other.SkippedFiles
 	r.SpaceFreed += other.SpaceFreed
+	r.LockedFiles += other.LockedFiles
+	r.PermissionFiles += other.PermissionFiles
 	r.Errors = append(r.Errors, other.Errors...)
 }
 
@@ -276,10 +323,16 @@ func cleanDirectoryInternal(dir string, maxAge time.Duration, dryRun bool) Clean
 			result.SpaceFreed += info.Size()
 		} else {
 			if err := removeWithTimeout(path, fileTimeout); err != nil {
-				if strings.Contains(err.Error(), "timeout") {
+				ce := classifyError(path, err)
+				switch ce.Type {
+				case ErrorLocked, ErrorTimeout:
 					result.SkippedFiles++
-				} else {
-					result.Errors = append(result.Errors, fmt.Errorf("remove %s: %w", path, err))
+					result.LockedFiles++
+				case ErrorPermissionDenied:
+					result.SkippedFiles++
+					result.PermissionFiles++
+				default:
+					result.Errors = append(result.Errors, ce)
 				}
 			} else {
 				result.FilesDeleted++
