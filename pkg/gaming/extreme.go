@@ -2,8 +2,11 @@ package gaming
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"runtime"
+
+	"syscleaner/pkg/admin"
 )
 
 // ExtremeMode holds state for extreme performance mode.
@@ -45,6 +48,10 @@ var (
 
 // EnableExtremeMode stops Windows Explorer and non-essential services.
 func EnableExtremeMode() error {
+	if err := admin.RequireElevation("Extreme Performance Mode"); err != nil {
+		return err
+	}
+
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -71,16 +78,19 @@ func EnableExtremeMode() error {
 	}
 
 	// Stop additional services for extreme mode
+	log.Println("[SysCleaner] Stopping non-essential services for extreme performance...")
 	for _, svc := range extremeServicesToStop {
 		stopService(svc)
 	}
 
 	// Ensure anti-cheat services are running
+	log.Println("[SysCleaner] Ensuring anti-cheat services are running...")
 	for _, svc := range antiCheatServices {
 		startService(svc)
 	}
 
 	// Stop Windows Explorer (Desktop Experience)
+	log.Println("[SysCleaner] Stopping Windows Explorer shell...")
 	if err := stopWindowsExplorer(); err != nil {
 		return fmt.Errorf("failed to stop explorer: %w", err)
 	}

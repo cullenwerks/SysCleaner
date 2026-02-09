@@ -1,0 +1,4 @@
+// Resource script for embedding the application manifest.
+// Compile with: windres -o syscleaner.syso syscleaner.rc
+// Then place syscleaner.syso in the project root before building.
+1 24 "syscleaner.manifest"

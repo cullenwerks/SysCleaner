@@ -2,8 +2,11 @@ package tools
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"runtime"
+
+	"syscleaner/pkg/admin"
 )
 
 var bloatwareApps = []string{
@@ -47,9 +50,15 @@ func DebloatWindows() (*DebloatResult, error) {
 		return nil, fmt.Errorf("debloating only available on Windows")
 	}
 
+	if err := admin.RequireElevation("Windows Debloat"); err != nil {
+		return nil, err
+	}
+
 	result := &DebloatResult{}
 
+	log.Println("[SysCleaner] Starting Windows debloat...")
 	for _, app := range bloatwareApps {
+		log.Printf("[SysCleaner] Removing: %s", app)
 		cmd := exec.Command("powershell", "-Command",
 			fmt.Sprintf("Get-AppxPackage *%s* | Remove-AppxPackage", app))
 
@@ -60,5 +69,6 @@ func DebloatWindows() (*DebloatResult, error) {
 		}
 	}
 
+	log.Printf("[SysCleaner] Debloat complete: %d apps removed, %d failed", result.AppsRemoved, len(result.AppsFailed))
 	return result, nil
 }

@@ -2,6 +2,7 @@ package cleaner
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -34,31 +35,39 @@ func PerformClean(opts CleanOptions) CleanResult {
 	result := CleanResult{}
 
 	if opts.TempFiles {
+		log.Println("[SysCleaner] Cleaning temporary files...")
 		r := cleanTempFiles(opts.DryRun)
 		result.merge(r)
 	}
 	if opts.Browser {
+		log.Println("[SysCleaner] Cleaning browser caches...")
 		r := cleanBrowserCaches(opts.DryRun)
 		result.merge(r)
 	}
 	if opts.Prefetch {
+		log.Println("[SysCleaner] Cleaning prefetch data...")
 		r := cleanPrefetch(opts.DryRun)
 		result.merge(r)
 	}
 	if opts.Thumbnails {
+		log.Println("[SysCleaner] Cleaning thumbnail caches...")
 		r := cleanThumbnails(opts.DryRun)
 		result.merge(r)
 	}
 	if opts.Logs {
+		log.Println("[SysCleaner] Cleaning log files...")
 		r := cleanLogFiles(opts.DryRun)
 		result.merge(r)
 	}
 	if opts.Registry {
+		log.Println("[SysCleaner] Cleaning registry junk...")
 		r := cleanRegistry(opts.DryRun)
 		result.merge(r)
 	}
 
 	result.Duration = time.Since(start)
+	log.Printf("[SysCleaner] Cleanup complete: %d files, %s freed in %s",
+		result.FilesDeleted, FormatBytes(result.SpaceFreed), result.Duration.Round(time.Millisecond))
 	return result
 }
 
@@ -92,9 +101,58 @@ func getTempDirs() []string {
 		if localAppData != "" {
 			dirs = append(dirs, filepath.Join(localAppData, "Temp"))
 		}
+
+		// Windows Update cache
+		if winDir != "" {
+			dirs = append(dirs, filepath.Join(winDir, "SoftwareDistribution", "Download"))
+		}
+
+		// Windows Installer cache (orphaned patches)
+		if winDir != "" {
+			dirs = append(dirs, filepath.Join(winDir, "Installer", "$PatchCache$"))
+		}
+
+		// Crash dump files
+		if localAppData != "" {
+			dirs = append(dirs, filepath.Join(localAppData, "CrashDumps"))
+		}
+		if winDir != "" {
+			dirs = append(dirs, filepath.Join(winDir, "Minidump"))
+		}
+
+		// Windows Error Reporting
+		if localAppData != "" {
+			dirs = append(dirs, filepath.Join(localAppData, "Microsoft", "Windows", "WER"))
+		}
+		programData := os.Getenv("ProgramData")
+		if programData != "" {
+			dirs = append(dirs, filepath.Join(programData, "Microsoft", "Windows", "WER"))
+		}
+
+		// DirectX shader cache
+		if localAppData != "" {
+			dirs = append(dirs, filepath.Join(localAppData, "D3DSCache"))
+		}
+
+		// Windows icon cache
+		if localAppData != "" {
+			dirs = append(dirs, filepath.Join(localAppData, "IconCache.db"))
+		}
+
+		// Font cache
+		if winDir != "" {
+			dirs = append(dirs, filepath.Join(winDir, "ServiceProfiles", "LocalService", "AppData", "Local", "FontCache"))
+		}
+
 	} else {
 		dirs = append(dirs, os.TempDir())
 		dirs = append(dirs, "/tmp")
+		// Linux/macOS trash
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			dirs = append(dirs, filepath.Join(home, ".local", "share", "Trash", "files"))
+			dirs = append(dirs, filepath.Join(home, ".cache"))
+		}
 	}
 	return dedup(dirs)
 }
@@ -104,37 +162,125 @@ func cleanBrowserCaches(dryRun bool) CleanResult {
 	localAppData := os.Getenv("LOCALAPPDATA")
 	appData := os.Getenv("APPDATA")
 
-	if localAppData == "" && appData == "" {
-		// Not on Windows or env not set
+	if runtime.GOOS != "windows" {
+		// Linux/macOS browser caches
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			linuxPaths := []string{
+				filepath.Join(home, ".cache", "google-chrome"),
+				filepath.Join(home, ".cache", "chromium"),
+				filepath.Join(home, ".cache", "mozilla", "firefox"),
+				filepath.Join(home, ".cache", "BraveSoftware"),
+				filepath.Join(home, ".cache", "vivaldi"),
+				filepath.Join(home, "Library", "Caches", "Google", "Chrome"),       // macOS
+				filepath.Join(home, "Library", "Caches", "com.brave.Browser"),       // macOS
+				filepath.Join(home, "Library", "Caches", "com.vivaldi.Vivaldi"),     // macOS
+				filepath.Join(home, "Library", "Caches", "com.operasoftware.Opera"), // macOS
+			}
+			for _, p := range linuxPaths {
+				r := cleanDirectory(p, 0, dryRun)
+				result.merge(r)
+			}
+		}
 		return result
 	}
 
-	cachePaths := []string{}
-	if localAppData != "" {
-		cachePaths = append(cachePaths,
-			filepath.Join(localAppData, "Google", "Chrome", "User Data", "Default", "Cache"),
-			filepath.Join(localAppData, "Google", "Chrome", "User Data", "Default", "Code Cache"),
-			filepath.Join(localAppData, "Microsoft", "Edge", "User Data", "Default", "Cache"),
-			filepath.Join(localAppData, "Microsoft", "Edge", "User Data", "Default", "Code Cache"),
-			filepath.Join(localAppData, "Opera Software", "Opera Stable", "Cache"),
-		)
+	if localAppData == "" && appData == "" {
+		return result
 	}
-	if appData != "" {
-		cachePaths = append(cachePaths,
-			filepath.Join(appData, "Mozilla", "Firefox", "Profiles"),
+
+	// Chromium-based browsers store profiles in "User Data" with numbered profiles.
+	// We enumerate all profiles (Default, Profile 1, Profile 2, etc.) for each browser.
+	type chromiumBrowser struct {
+		name    string
+		dataDir string
+	}
+
+	chromiumBrowsers := []chromiumBrowser{}
+	if localAppData != "" {
+		chromiumBrowsers = append(chromiumBrowsers,
+			chromiumBrowser{"Chrome", filepath.Join(localAppData, "Google", "Chrome", "User Data")},
+			chromiumBrowser{"Edge", filepath.Join(localAppData, "Microsoft", "Edge", "User Data")},
+			chromiumBrowser{"Brave", filepath.Join(localAppData, "BraveSoftware", "Brave-Browser", "User Data")},
+			chromiumBrowser{"Vivaldi", filepath.Join(localAppData, "Vivaldi", "User Data")},
+			chromiumBrowser{"Opera", filepath.Join(appData, "Opera Software", "Opera Stable")},
+			chromiumBrowser{"Opera GX", filepath.Join(appData, "Opera Software", "Opera GX Stable")},
 		)
 	}
 
-	for _, p := range cachePaths {
-		if strings.Contains(p, "Firefox") {
-			// Firefox stores cache in profile subdirectories
-			r := cleanFirefoxCache(p, dryRun)
-			result.merge(r)
-		} else {
-			r := cleanDirectory(p, 0, dryRun)
+	// Clean all Chromium-based browsers
+	for _, browser := range chromiumBrowsers {
+		r := cleanChromiumProfiles(browser.name, browser.dataDir, dryRun)
+		result.merge(r)
+	}
+
+	// Firefox (profile-based cache structure)
+	if appData != "" {
+		firefoxProfiles := filepath.Join(appData, "Mozilla", "Firefox", "Profiles")
+		r := cleanFirefoxCache(firefoxProfiles, dryRun)
+		result.merge(r)
+	}
+
+	// Discord cache
+	if appData != "" {
+		discordCacheDirs := []string{
+			filepath.Join(appData, "discord", "Cache"),
+			filepath.Join(appData, "discord", "Code Cache"),
+			filepath.Join(appData, "discord", "GPUCache"),
+		}
+		for _, d := range discordCacheDirs {
+			r := cleanDirectory(d, 0, dryRun)
 			result.merge(r)
 		}
 	}
+
+	// Spotify cache
+	if localAppData != "" {
+		r := cleanDirectory(filepath.Join(localAppData, "Spotify", "Storage"), 0, dryRun)
+		result.merge(r)
+	}
+
+	// Steam web browser cache
+	if localAppData != "" {
+		r := cleanDirectory(filepath.Join(localAppData, "Steam", "htmlcache"), 0, dryRun)
+		result.merge(r)
+	}
+
+	return result
+}
+
+// cleanChromiumProfiles enumerates Chromium profile directories and cleans cache folders.
+func cleanChromiumProfiles(browserName, userDataDir string, dryRun bool) CleanResult {
+	result := CleanResult{}
+	if _, err := os.Stat(userDataDir); os.IsNotExist(err) {
+		return result
+	}
+
+	// Chromium cache subdirectories to clean
+	cacheSubdirs := []string{
+		"Cache", "Code Cache", "GPUCache", "Service Worker", "ShaderCache",
+	}
+
+	entries, err := os.ReadDir(userDataDir)
+	if err != nil {
+		return result
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		// Match "Default" or "Profile N" directories
+		if name == "Default" || strings.HasPrefix(name, "Profile ") {
+			for _, sub := range cacheSubdirs {
+				cacheDir := filepath.Join(userDataDir, name, sub)
+				r := cleanDirectory(cacheDir, 0, dryRun)
+				result.merge(r)
+			}
+		}
+	}
+
 	return result
 }
 
@@ -148,6 +294,10 @@ func cleanFirefoxCache(profilesDir string, dryRun bool) CleanResult {
 		if entry.IsDir() {
 			cacheDir := filepath.Join(profilesDir, entry.Name(), "cache2")
 			r := cleanDirectory(cacheDir, 0, dryRun)
+			result.merge(r)
+			// Also clean startupCache
+			startupCache := filepath.Join(profilesDir, entry.Name(), "startupCache")
+			r = cleanDirectory(startupCache, 0, dryRun)
 			result.merge(r)
 		}
 	}
@@ -176,7 +326,7 @@ func cleanThumbnails(dryRun bool) CleanResult {
 		return result
 	}
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasPrefix(entry.Name(), "thumbcache_") {
+		if !entry.IsDir() && (strings.HasPrefix(entry.Name(), "thumbcache_") || strings.HasPrefix(entry.Name(), "iconcache_")) {
 			fpath := filepath.Join(thumbDir, entry.Name())
 			info, err := entry.Info()
 			if err != nil {
@@ -207,6 +357,8 @@ func cleanLogFiles(dryRun bool) CleanResult {
 	logDirs := []string{}
 	if winDir != "" {
 		logDirs = append(logDirs, filepath.Join(winDir, "Logs"))
+		logDirs = append(logDirs, filepath.Join(winDir, "Debug"))    // Windows debug logs
+		logDirs = append(logDirs, filepath.Join(winDir, "Panther")) // Windows setup logs
 	}
 	if programData != "" {
 		logDirs = append(logDirs, filepath.Join(programData, "Logs"))
