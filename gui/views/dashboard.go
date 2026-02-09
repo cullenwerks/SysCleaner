@@ -18,17 +18,17 @@ import (
 	"syscleaner/pkg/gaming"
 )
 
-// NewDashboard creates the main dashboard view.
+// NewDashboard creates the main dashboard view with animated score ring
 func NewDashboard() fyne.CanvasObject {
 	// System info section
 	sysInfoLabel := widget.NewLabel("Loading system info...")
 	sysInfoLabel.Wrapping = fyne.TextWrapWord
 
-	// Performance score
-	scoreLabel := widget.NewLabelWithStyle("--", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	// Animated performance score ring
+	scoreRing := NewScoreRing()
 	scoreDesc := widget.NewLabelWithStyle("Performance Score", fyne.TextAlignCenter, fyne.TextStyle{})
 
-	// Status indicators
+	// Status indicators with smooth animations
 	cpuBar := widget.NewProgressBar()
 	ramBar := widget.NewProgressBar()
 	diskBar := widget.NewProgressBar()
@@ -36,7 +36,10 @@ func NewDashboard() fyne.CanvasObject {
 	ramLabel := widget.NewLabel("RAM: --")
 	diskLabel := widget.NewLabel("Disk: --")
 
-	// Gaming mode status
+	// Track previous values for smooth transitions
+	var prevCPU, prevRAM, prevDisk float64
+
+	// Gaming mode status with pulsing effect
 	gamingStatus := widget.NewLabel("Gaming Mode: Inactive")
 	extremeStatus := widget.NewLabel("Extreme Mode: Inactive")
 
@@ -49,45 +52,56 @@ func NewDashboard() fyne.CanvasObject {
 		}
 	}()
 
-	// Real-time update goroutine
+	// Real-time update goroutine with smooth animations
 	go func() {
 		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
+
 		for range ticker.C {
-			// CPU
+			// CPU with smooth transition
 			if cpuPercent, err := cpu.Percent(500*time.Millisecond, false); err == nil && len(cpuPercent) > 0 {
-				cpuBar.SetValue(cpuPercent[0] / 100.0)
-				cpuLabel.SetText(fmt.Sprintf("CPU: %.1f%%", cpuPercent[0]))
+				targetCPU := cpuPercent[0] / 100.0
+				// Smooth interpolation
+				smoothCPU := prevCPU + (targetCPU-prevCPU)*0.3
+				prevCPU = smoothCPU
+				cpuBar.SetValue(smoothCPU)
+				cpuLabel.SetText(fmt.Sprintf("CPU: %.1f%%", smoothCPU*100))
 			}
 
-			// RAM
+			// RAM with smooth transition
 			if vmem, err := mem.VirtualMemory(); err == nil {
-				ramBar.SetValue(vmem.UsedPercent / 100.0)
+				targetRAM := vmem.UsedPercent / 100.0
+				smoothRAM := prevRAM + (targetRAM-prevRAM)*0.3
+				prevRAM = smoothRAM
+				ramBar.SetValue(smoothRAM)
 				ramLabel.SetText(fmt.Sprintf("RAM: %.1f%% (%.1f / %.1f GB)",
-					vmem.UsedPercent,
+					smoothRAM*100,
 					float64(vmem.Used)/1024/1024/1024,
 					float64(vmem.Total)/1024/1024/1024))
 			}
 
-			// Disk
+			// Disk with smooth transition
 			if usage, err := disk.Usage("/"); err == nil {
-				diskBar.SetValue(usage.UsedPercent / 100.0)
+				targetDisk := usage.UsedPercent / 100.0
+				smoothDisk := prevDisk + (targetDisk-prevDisk)*0.3
+				prevDisk = smoothDisk
+				diskBar.SetValue(smoothDisk)
 				diskLabel.SetText(fmt.Sprintf("Disk: %.1f%% (%.1f / %.1f GB)",
-					usage.UsedPercent,
+					smoothDisk*100,
 					float64(usage.Used)/1024/1024/1024,
 					float64(usage.Total)/1024/1024/1024))
 			}
 
-			// Performance score
-			score := calculateDashboardScore(cpuBar.Value, ramBar.Value, diskBar.Value)
-			scoreLabel.SetText(fmt.Sprintf("%d", score))
+			// Performance score with animation
+			score := calculateDashboardScore(prevCPU, prevRAM, prevDisk)
+			scoreRing.SetScore(score)
 
-			// Mode status
+			// Mode status with styling
 			if gaming.IsExtremeModeActive() {
-				extremeStatus.SetText("Extreme Mode: ACTIVE")
-				gamingStatus.SetText("Gaming Mode: ACTIVE")
+				extremeStatus.SetText("⚡ EXTREME MODE ACTIVE ⚡")
+				gamingStatus.SetText("🎮 Gaming Mode: ACTIVE")
 			} else if gaming.IsEnabled() {
-				gamingStatus.SetText("Gaming Mode: ACTIVE")
+				gamingStatus.SetText("🎮 Gaming Mode: ACTIVE")
 				extremeStatus.SetText("Extreme Mode: Inactive")
 			} else {
 				gamingStatus.SetText("Gaming Mode: Inactive")
@@ -97,9 +111,11 @@ func NewDashboard() fyne.CanvasObject {
 	}()
 
 	// Layout
-	scoreSection := container.NewVBox(
-		container.NewCenter(scoreLabel),
-		container.NewCenter(scoreDesc),
+	scoreSection := container.NewCenter(
+		container.NewVBox(
+			container.NewCenter(scoreRing),
+			container.NewCenter(scoreDesc),
+		),
 	)
 
 	metricsSection := container.NewVBox(
@@ -132,9 +148,9 @@ func NewDashboard() fyne.CanvasObject {
 func calculateDashboardScore(cpuLoad, ramLoad, diskLoad float64) int {
 	// Lower resource usage = higher score
 	score := 100.0
-	score -= cpuLoad * 30.0       // CPU weight 30%
-	score -= ramLoad * 30.0       // RAM weight 30%
-	score -= diskLoad * 20.0      // Disk weight 20%
+	score -= cpuLoad * 30.0  // CPU weight 30%
+	score -= ramLoad * 30.0  // RAM weight 30%
+	score -= diskLoad * 20.0 // Disk weight 20%
 	// Remaining 20% for mode bonuses
 	if gaming.IsExtremeModeActive() {
 		score += 10

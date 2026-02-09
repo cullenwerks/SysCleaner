@@ -16,9 +16,10 @@ import (
 	"github.com/shirou/gopsutil/v3/net"
 
 	"syscleaner/pkg/gaming"
+	sysmem "syscleaner/pkg/memory"
 )
 
-// NewMonitorPanel creates the real-time monitoring view.
+// NewMonitorPanel creates the real-time monitoring view with RAM monitoring
 func NewMonitorPanel() fyne.CanvasObject {
 	cpuLabel := widget.NewLabel("CPU: --")
 	ramLabel := widget.NewLabel("RAM: --")
@@ -27,17 +28,42 @@ func NewMonitorPanel() fyne.CanvasObject {
 	cpuProgress := widget.NewProgressBar()
 	ramProgress := widget.NewProgressBar()
 
+	// RAM Monitor Section (for Extreme Mode)
+	ramTotalLabel := widget.NewLabel("Total: --")
+	ramUsedLabel := widget.NewLabel("Used: --")
+	ramFreeLabel := widget.NewLabel("Free: --")
+	ramStandbyLabel := widget.NewLabel("Standby: --")
+	ramTrimCountLabel := widget.NewLabel("Trim Count: 0")
+	ramLastTrimLabel := widget.NewLabel("Last Trim: Never")
+
+	ramTotalBar := widget.NewProgressBar()
+	ramUsedBar := widget.NewProgressBar()
+	ramFreeBar := widget.NewProgressBar()
+	ramStandbyBar := widget.NewProgressBar()
+
+	trimNowBtn := widget.NewButton("Trim RAM Now", func() {
+		if err := sysmem.TrimNow(); err != nil {
+			ramLastTrimLabel.SetText(fmt.Sprintf("Trim Failed: %v", err))
+		} else {
+			ramLastTrimLabel.SetText(fmt.Sprintf("Last Trim: %s", time.Now().Format("15:04:05")))
+		}
+	})
+
 	logText := widget.NewMultiLineEntry()
 	logText.SetPlaceHolder("System events will appear here...")
 	logText.Disable()
-	logText.SetMinRowsVisible(15)
+	logText.SetMinRowsVisible(12)
 
 	var logMu sync.Mutex
-	addLog := func(message string) {
+	addLog := func(message string, isWarning bool) {
 		logMu.Lock()
 		defer logMu.Unlock()
 		timestamp := time.Now().Format("15:04:05")
-		entry := fmt.Sprintf("[%s] %s\n", timestamp, message)
+		prefix := ""
+		if isWarning {
+			prefix = "⚠️ "
+		}
+		entry := fmt.Sprintf("[%s] %s%s\n", timestamp, prefix, message)
 		current := logText.Text
 		// Keep log manageable - trim after 5000 chars
 		if len(current) > 5000 {
@@ -55,6 +81,9 @@ func NewMonitorPanel() fyne.CanvasObject {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 
+		lastGameModeCheck := false
+		lastExtremeModeCheck := false
+
 		for range ticker.C {
 			// CPU usage
 			if cpuPercent, err := cpu.Percent(500*time.Millisecond, false); err == nil && len(cpuPercent) > 0 {
@@ -62,7 +91,7 @@ func NewMonitorPanel() fyne.CanvasObject {
 				cpuLabel.SetText(fmt.Sprintf("CPU: %.1f%%", cpuPercent[0]))
 
 				if cpuPercent[0] > 90 {
-					addLog(fmt.Sprintf("HIGH CPU: %.1f%%", cpuPercent[0]))
+					addLog(fmt.Sprintf("HIGH CPU: %.1f%%", cpuPercent[0]), true)
 				}
 			}
 
@@ -75,7 +104,25 @@ func NewMonitorPanel() fyne.CanvasObject {
 					float64(vmem.Total)/1024/1024/1024))
 
 				if vmem.UsedPercent > 90 {
-					addLog(fmt.Sprintf("HIGH RAM: %.1f%%", vmem.UsedPercent))
+					addLog(fmt.Sprintf("HIGH RAM: %.1f%%", vmem.UsedPercent), true)
+				}
+			}
+
+			// RAM Monitor Stats (only when Extreme Mode is active)
+			if gaming.IsExtremeModeActive() {
+				stats := sysmem.GetCurrentStats()
+				ramTotalLabel.SetText(fmt.Sprintf("Total: %.2f GB", stats.TotalGB))
+				ramUsedLabel.SetText(fmt.Sprintf("Used: %.2f GB (%.1f%%)", stats.UsedGB, stats.UsedPercent))
+				ramFreeLabel.SetText(fmt.Sprintf("Free: %.2f GB (%.1f%%)", stats.FreeGB, stats.FreePercent))
+				ramStandbyLabel.SetText(fmt.Sprintf("Standby: %.2f GB (%.1f%%)", stats.StandbyGB, stats.StandbyPercent))
+				ramTrimCountLabel.SetText(fmt.Sprintf("Trim Count: %d", stats.TrimCount))
+
+				ramUsedBar.SetValue(stats.UsedPercent / 100.0)
+				ramFreeBar.SetValue(stats.FreePercent / 100.0)
+				ramStandbyBar.SetValue(stats.StandbyPercent / 100.0)
+
+				if !stats.LastTrimTime.IsZero() {
+					ramLastTrimLabel.SetText(fmt.Sprintf("Last Trim: %s ago", time.Since(stats.LastTrimTime).Round(time.Second)))
 				}
 			}
 
@@ -96,10 +143,23 @@ func NewMonitorPanel() fyne.CanvasObject {
 			}
 
 			// Log gaming mode status changes
-			if gaming.IsExtremeModeActive() {
-				addLog("Extreme Mode Active - Maximum Performance")
-			} else if gaming.IsEnabled() {
-				addLog("Gaming Mode Active")
+			gameModeActive := gaming.IsEnabled()
+			extremeModeActive := gaming.IsExtremeModeActive()
+
+			if extremeModeActive && !lastExtremeModeCheck {
+				addLog("🔥 Extreme Mode ACTIVATED - Maximum Performance", false)
+				lastExtremeModeCheck = true
+			} else if !extremeModeActive && lastExtremeModeCheck {
+				addLog("Extreme Mode Deactivated", false)
+				lastExtremeModeCheck = false
+			}
+
+			if gameModeActive && !lastGameModeCheck && !extremeModeActive {
+				addLog("🎮 Gaming Mode Activated", false)
+				lastGameModeCheck = true
+			} else if !gameModeActive && lastGameModeCheck {
+				addLog("Gaming Mode Deactivated", false)
+				lastGameModeCheck = false
 			}
 		}
 	}()
@@ -130,6 +190,34 @@ func NewMonitorPanel() fyne.CanvasObject {
 		netSection,
 	)
 
+	// RAM Monitor Section (visible only when Extreme Mode is active)
+	ramMonitorSection := container.NewVBox(
+		widget.NewSeparator(),
+		widget.NewLabelWithStyle("RAM Monitor (Extreme Mode)", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		container.NewGridWithColumns(2,
+			widget.NewLabel("Total RAM:"),
+			ramTotalLabel,
+		),
+		container.NewVBox(
+			ramUsedLabel,
+			ramUsedBar,
+		),
+		container.NewVBox(
+			ramFreeLabel,
+			ramFreeBar,
+		),
+		container.NewVBox(
+			ramStandbyLabel,
+			ramStandbyBar,
+		),
+		container.NewGridWithColumns(2,
+			ramTrimCountLabel,
+			ramLastTrimLabel,
+		),
+		trimNowBtn,
+		widget.NewLabel("Note: RAM trimming happens automatically when free memory drops below 15%"),
+	)
+
 	// Clear log button
 	clearBtn := widget.NewButton("Clear Log", func() {
 		logMu.Lock()
@@ -145,6 +233,7 @@ func NewMonitorPanel() fyne.CanvasObject {
 		widget.NewLabelWithStyle("Real-Time Monitor", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		widget.NewSeparator(),
 		metrics,
+		ramMonitorSection,
 		widget.NewSeparator(),
 		logsHeader,
 		logText,
