@@ -2,12 +2,15 @@
 
 Complete guide for building SysCleaner v2.0 with GUI, custom icon, and Windows integration.
 
+**Supported architectures:** x64 (amd64) and ARM64 (Windows on ARM).
+
 ---
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Quick Build](#quick-build)
+- [Building for ARM64](#building-for-arm64)
 - [Detailed Build Steps](#detailed-build-steps)
 - [Creating the Application Icon](#creating-the-application-icon)
 - [Build Configurations](#build-configurations)
@@ -24,13 +27,16 @@ Complete guide for building SysCleaner v2.0 with GUI, custom icon, and Windows i
 1. **Go 1.21 or higher**
    ```powershell
    # Download from https://go.dev/dl/
+   # For x64 systems: download the windows-amd64 installer
+   # For ARM64 systems: download the windows-arm64 installer
    # Verify installation:
    go version
-   # Should output: go version go1.21.x windows/amd64 or higher
+   # Should output: go version go1.21.x windows/amd64 (or windows/arm64)
    ```
 
 2. **GCC Compiler (for CGO/Fyne)**
    ```powershell
+   # --- For x64 builds ---
    # Option 1: TDM-GCC (easiest)
    # Download from: https://jmeubank.github.io/tdm-gcc/
    # Install to default location (C:\TDM-GCC-64)
@@ -39,6 +45,12 @@ Complete guide for building SysCleaner v2.0 with GUI, custom icon, and Windows i
    # Download from: https://www.msys2.org/
    # After install, run in MSYS2 terminal:
    pacman -S mingw-w64-x86_64-gcc
+
+   # --- For ARM64 builds ---
+   # Use LLVM/MinGW for ARM64 cross-compilation:
+   # Download from: https://github.com/mstorsjo/llvm-mingw/releases
+   # Or use MSYS2 on an ARM64 device:
+   pacman -S mingw-w64-aarch64-gcc
 
    # Verify GCC:
    gcc --version
@@ -55,7 +67,7 @@ Complete guide for building SysCleaner v2.0 with GUI, custom icon, and Windows i
 
 ### System Requirements
 
-- **OS**: Windows 10/11 (64-bit)
+- **OS**: Windows 10/11 (64-bit, x64 or ARM64)
 - **RAM**: 4 GB minimum (8 GB recommended)
 - **Disk Space**: ~1 GB (Go toolchain + dependencies + build cache)
 
@@ -78,14 +90,81 @@ go mod download
 # Save as assets/icon.ico
 
 # 4. Compile icon resource
-rsrc -ico assets/icon.ico -o rsrc_windows_amd64.syso
+rsrc -ico assets/icon.ico -arch amd64 -o rsrc_windows_amd64.syso
 
-# 5. Build SysCleaner GUI
-go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
+# 5. Build SysCleaner GUI (x64)
+$env:GOARCH="amd64"
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-x64.exe
 
 # 6. Run
-.\SysCleaner.exe
+.\SysCleaner-x64.exe
 ```
+
+Or use the build script:
+```powershell
+.\build.ps1                  # x64 (default)
+.\build.ps1 -Arch arm64     # ARM64
+.\build.ps1 -Arch all       # Both architectures
+```
+
+---
+
+## Building for ARM64
+
+SysCleaner natively supports Windows on ARM (ARM64) devices such as Surface Pro X, Lenovo ThinkPad X13s, Samsung Galaxy Book Go, and other Snapdragon-powered Windows PCs.
+
+### Native build on ARM64 device
+
+If you're building directly on a Windows ARM64 device:
+
+```powershell
+# Go auto-detects the host architecture
+git clone https://github.com/cullenwerks/SysCleaner.git
+cd SysCleaner
+go mod download
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-arm64.exe
+```
+
+### Cross-compile from x64
+
+You can build ARM64 binaries from an x64 machine:
+
+```powershell
+# Set target architecture
+$env:GOOS = "windows"
+$env:GOARCH = "arm64"
+
+# For CGO (Fyne GUI), you need an ARM64 cross-compiler:
+# Option 1: Disable CGO (some Fyne features may be limited)
+$env:CGO_ENABLED = "0"
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-arm64.exe
+
+# Option 2: Use LLVM-MinGW cross-compiler (full CGO support)
+# Download from: https://github.com/mstorsjo/llvm-mingw/releases
+$env:CGO_ENABLED = "1"
+$env:CC = "aarch64-w64-mingw32-gcc"
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-arm64.exe
+```
+
+### Using the build script
+
+```powershell
+# Build for ARM64
+.\build.ps1 -Arch arm64
+
+# Build both x64 and ARM64
+.\build.ps1 -Arch all
+
+# Build both + create release ZIPs
+.\build-all.ps1 -Package
+```
+
+### Architecture compatibility notes
+
+- All Windows APIs used by SysCleaner (NtSetSystemInformation, registry, service control) are fully available on ARM64
+- The `golang.org/x/sys/windows` package handles architecture differences transparently
+- Performance characteristics (RAM trimming, service management) are identical on both architectures
+- Windows on ARM can run x64 binaries via emulation, but native ARM64 builds are faster and more power-efficient
 
 ---
 
@@ -126,27 +205,38 @@ If you created `assets/icon.ico`:
 
 ```powershell
 # Generate .syso file (Windows resource object)
-rsrc -ico assets/icon.ico -o rsrc_windows_amd64.syso
+# The -arch flag must match your target architecture
 
-# This creates rsrc_windows_amd64.syso in the root directory
-# Go will automatically include it during build
+# For x64:
+rsrc -ico assets/icon.ico -arch amd64 -o rsrc_windows_amd64.syso
+
+# For ARM64:
+rsrc -ico assets/icon.ico -arch arm64 -o rsrc_windows_arm64.syso
+
+# Go will automatically include the matching .syso during build
 ```
 
 ### Step 5: Build the Executable
 
 ```powershell
-# Build SysCleaner with all optimizations
-go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
+# Build for x64 (default on most machines)
+$env:GOARCH = "amd64"
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-x64.exe
+
+# Build for ARM64
+$env:GOARCH = "arm64"
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-arm64.exe
 
 # Build completes in 30-60 seconds
-# Output: SysCleaner.exe (~15-20 MB)
+# Output: ~15-20 MB per architecture
 ```
 
 ### Step 6: Test the Application
 
 ```powershell
-# Launch SysCleaner
-.\SysCleaner.exe
+# Launch SysCleaner (use the correct binary for your architecture)
+.\SysCleaner-x64.exe    # On x64 systems
+.\SysCleaner-arm64.exe  # On ARM64 systems
 
 # GUI should open immediately
 # No terminal window should appear
@@ -318,8 +408,17 @@ go build -tags gui `
 
 ```powershell
 # Solution: Install GCC
+
+# For x64 builds:
 # Download TDM-GCC: https://jmeubank.github.io/tdm-gcc/
 # Or install MSYS2 and run: pacman -S mingw-w64-x86_64-gcc
+
+# For ARM64 cross-compilation from x64:
+# Download LLVM-MinGW: https://github.com/mstorsjo/llvm-mingw/releases
+# Set: $env:CC = "aarch64-w64-mingw32-gcc"
+
+# For native ARM64 builds:
+# Install MSYS2 and run: pacman -S mingw-w64-aarch64-gcc
 
 # Verify after install:
 gcc --version
@@ -377,12 +476,16 @@ go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
 gcc --version
 
 # If not found, add GCC to PATH:
-# TDM-GCC: C:\TDM-GCC-64\bin
-# MSYS2: C:\msys64\mingw64\bin
+# TDM-GCC (x64): C:\TDM-GCC-64\bin
+# MSYS2 (x64):   C:\msys64\mingw64\bin
+# MSYS2 (ARM64): C:\msys64\clangarm64\bin
+
+# For ARM64 cross-compilation, set the correct compiler:
+$env:CC = "aarch64-w64-mingw32-gcc"
 
 # Alternatively, use static build (no CGO):
 $env:CGO_ENABLED=0
-go build -tags gui -ldflags="-s -w" -o SysCleaner.exe
+go build -tags gui -ldflags="-s -w" -o SysCleaner-x64.exe
 ```
 
 ### "Permission denied" during build
@@ -427,22 +530,40 @@ go build -tags gui -ldflags="-s -w" -o SysCleaner.exe
 
 ## Distribution
 
-### Creating Release Package
+### Creating Release Packages
+
+Build and package for both architectures:
 
 ```powershell
-# 1. Build optimized executable
-go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
+# Automated: build both architectures and create release ZIPs
+.\build-all.ps1 -Package
 
-# 2. Create distribution folder
-mkdir SysCleaner-v2.0-Release
-copy SysCleaner.exe SysCleaner-v2.0-Release\
-copy README.md SysCleaner-v2.0-Release\
-copy LICENSE SysCleaner-v2.0-Release\
+# This creates:
+#   SysCleaner-v2.0-Windows-x64.zip
+#   SysCleaner-v2.0-Windows-arm64.zip
+```
 
-# 3. Compress to ZIP
-Compress-Archive -Path SysCleaner-v2.0-Release -DestinationPath SysCleaner-v2.0-Windows-amd64.zip
+Or manually:
 
-# 4. Upload to GitHub Releases
+```powershell
+# 1. Build for each architecture
+.\build.ps1 -Arch all
+
+# 2. Create x64 release package
+mkdir SysCleaner-v2.0-Windows-x64
+copy SysCleaner-x64.exe SysCleaner-v2.0-Windows-x64\SysCleaner.exe
+copy README.md SysCleaner-v2.0-Windows-x64\
+copy LICENSE SysCleaner-v2.0-Windows-x64\
+Compress-Archive -Path SysCleaner-v2.0-Windows-x64 -DestinationPath SysCleaner-v2.0-Windows-x64.zip
+
+# 3. Create ARM64 release package
+mkdir SysCleaner-v2.0-Windows-arm64
+copy SysCleaner-arm64.exe SysCleaner-v2.0-Windows-arm64\SysCleaner.exe
+copy README.md SysCleaner-v2.0-Windows-arm64\
+copy LICENSE SysCleaner-v2.0-Windows-arm64\
+Compress-Archive -Path SysCleaner-v2.0-Windows-arm64 -DestinationPath SysCleaner-v2.0-Windows-arm64.zip
+
+# 4. Upload both ZIPs to GitHub Releases
 ```
 
 ### Code Signing (Optional)
@@ -457,74 +578,21 @@ signtool sign /f certificate.pfx /p password /t http://timestamp.digicert.com Sy
 
 ---
 
-## Build Automation Script
+## Build Automation Scripts
 
-Save as `build.ps1`:
+The project includes two build scripts:
 
-```powershell
-param(
-    [string]$Version = "2.0.0",
-    [switch]$WithIcon = $true,
-    [switch]$Debug = $false
-)
-
-Write-Host "Building SysCleaner v$Version..." -ForegroundColor Cyan
-
-# Clean old builds
-Write-Host "Cleaning old builds..." -ForegroundColor Yellow
-Remove-Item -Path "*.exe" -ErrorAction SilentlyContinue
-Remove-Item -Path "*.syso" -ErrorAction SilentlyContinue
-
-# Download dependencies
-Write-Host "Downloading dependencies..." -ForegroundColor Yellow
-go mod download
-go mod tidy
-
-# Compile icon resource
-if ($WithIcon -and (Test-Path "assets/icon.ico")) {
-    Write-Host "Compiling icon resource..." -ForegroundColor Yellow
-    rsrc -ico assets/icon.ico -o rsrc_windows_amd64.syso
-    if ($?) {
-        Write-Host "✓ Icon compiled successfully" -ForegroundColor Green
-    } else {
-        Write-Host "✗ Icon compilation failed" -ForegroundColor Red
-    }
-}
-
-# Build executable
-Write-Host "Building executable..." -ForegroundColor Yellow
-
-if ($Debug) {
-    go build -tags gui -o "SysCleaner-v$Version-debug.exe"
-    $exeName = "SysCleaner-v$Version-debug.exe"
-} else {
-    go build -tags gui -ldflags="-s -w -H=windowsgui" -trimpath -o "SysCleaner.exe"
-    $exeName = "SysCleaner.exe"
-}
-
-# Verify build
-if (Test-Path $exeName) {
-    $size = (Get-Item $exeName).Length / 1MB
-    Write-Host "✓ Build successful!" -ForegroundColor Green
-    Write-Host "  Executable: $exeName" -ForegroundColor Cyan
-    Write-Host "  Size: $([math]::Round($size, 2)) MB" -ForegroundColor Cyan
-    Write-Host "  Version: $Version" -ForegroundColor Cyan
-} else {
-    Write-Host "✗ Build failed!" -ForegroundColor Red
-    exit 1
-}
-
-# Clean up .syso file (optional)
-# Remove-Item -Path "*.syso" -ErrorAction SilentlyContinue
-
-Write-Host "`nBuild complete! Run with: .\$exeName" -ForegroundColor Green
-```
-
-Usage:
+### `build.ps1` - Single or Multi-Architecture Build
 
 ```powershell
-# Standard build
+# Build for x64 (default)
 .\build.ps1
+
+# Build for ARM64
+.\build.ps1 -Arch arm64
+
+# Build for both architectures
+.\build.ps1 -Arch all
 
 # Debug build
 .\build.ps1 -Debug
@@ -536,6 +604,27 @@ Usage:
 .\build.ps1 -WithIcon:$false
 ```
 
+Parameters:
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `-Version` | `"2.0.0"` | Version string for output naming |
+| `-Arch` | `"amd64"` | Target architecture: `amd64`, `arm64`, or `all` |
+| `-WithIcon` | `$true` | Embed application icon |
+| `-Debug` | `$false` | Include debug symbols and console window |
+
+### `build-all.ps1` - Build & Package Both Architectures
+
+```powershell
+# Build both architectures
+.\build-all.ps1
+
+# Build both + create release ZIP packages
+.\build-all.ps1 -Package
+
+# Custom version
+.\build-all.ps1 -Version "2.0.1"
+```
+
 ---
 
 ## Summary
@@ -543,14 +632,17 @@ Usage:
 **Minimum steps for building SysCleaner:**
 
 1. Install Go 1.21+
-2. Install GCC (TDM-GCC recommended)
+2. Install GCC (TDM-GCC for x64, LLVM-MinGW for ARM64 cross-compilation)
 3. Clone repository
 4. Run: `go mod download`
-5. (Optional) Create icon and run: `rsrc -ico assets/icon.ico -o rsrc_windows_amd64.syso`
-6. Run: `go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe`
-7. Launch: `.\SysCleaner.exe`
+5. (Optional) Create icon and run: `rsrc -ico assets/icon.ico -arch amd64 -o rsrc_windows_amd64.syso`
+6. Build:
+   - **x64:** `$env:GOARCH="amd64"; go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-x64.exe`
+   - **ARM64:** `$env:GOARCH="arm64"; go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-arm64.exe`
+   - **Both:** `.\build.ps1 -Arch all`
+7. Launch: `.\SysCleaner-x64.exe` or `.\SysCleaner-arm64.exe`
 
-**That's it! You now have a fully functional SysCleaner GUI application.**
+**That's it! You now have a fully functional SysCleaner GUI application for your architecture.**
 
 ---
 
