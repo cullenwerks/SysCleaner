@@ -1,6 +1,55 @@
+# Binaries
 syscleaner
 syscleaner.exe
+syscleaner-gui.exe
+syscleaner-dev.exe
 *.exe
+*.exe~
 *.dll
 *.so
 *.dylib
+
+# Build output
+/dist/
+/release/
+/build/
+
+# Go build cache & test cache
+*.test
+*.out
+*.prof
+*.pprof
+coverage.txt
+coverage.html
+
+# Go workspace
+go.work
+go.work.sum
+
+# Vendor (if not committed)
+# vendor/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+.env.local
+*.pem
+*.key
+
+# UPX compressed backups
+*.exe~
+*.exe.bak
+
+# Debug binaries
+__debug_bin*
+
+# Fyne packaging output
+fyne-cross/
