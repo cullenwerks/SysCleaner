@@ -9,6 +9,9 @@ require (
 	golang.org/x/sys v0.15.0
 )
 
+// GUI dependencies (only needed with -tags gui):
+// fyne.io/fyne/v2 v2.4.3
+
 require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
