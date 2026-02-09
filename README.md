@@ -14,9 +14,11 @@
 ```bash
 # Quick start
 syscleaner analyze          # See what it can do for you
-syscleaner clean --all      # Clean everything  
+syscleaner clean --all      # Clean everything
 syscleaner gaming --enable  # Activate gaming mode
+syscleaner extreme --enable # Maximum performance (stops Explorer shell)
 syscleaner daemon --install # Auto-optimize forever
+syscleaner gui              # Launch graphical interface
 ```
 
 ---
@@ -26,13 +28,17 @@ syscleaner daemon --install # Auto-optimize forever
 | Feature | CCleaner | SysCleaner |
 |---------|----------|------------|
 | **Price** | $29.95/year | **FREE forever** |
+| **Extreme Performance Mode** | ❌ | ✅ Stops Explorer shell for max FPS |
 | **Gaming Mode** | ❌ | ✅ Auto-detect & optimize |
+| **GUI Dashboard** | Limited | ✅ Real-time monitoring |
+| **Windows Debloating** | ❌ | ✅ Removes 21 bloatware apps |
+| **Telemetry Blocking** | ❌ | ✅ O&O ShutUp10 style |
+| **DISM Image Repair** | ❌ | ✅ Scan & repair |
 | **Auto-Optimization** | ❌ | ✅ Background daemon |
 | **Open Source** | ❌ | ✅ MIT License |
 | **Telemetry/Tracking** | ✅ Yes | ❌ **None** |
 | **Bloatware** | ✅ Bundled software | ❌ **None** |
 | **Network Optimization** | ❌ | ✅ Gaming-focused |
-| **Per-Game Profiles** | ❌ | ✅ Coming soon |
 
 **No subscriptions. No tracking. No bloat. Just performance.**
 
@@ -83,6 +89,70 @@ syscleaner gaming --enable
 - All Steam, Epic, and Battle.net games
 
 *Easy to add more - just edit one line of code!*
+
+### 🔥 Extreme Performance Mode
+
+**Maximum FPS - stops the Windows desktop shell:**
+
+```bash
+syscleaner extreme --enable
+```
+
+**What it does beyond Gaming Mode:**
+- 🔥 **Stops Windows Explorer** (no desktop/taskbar for zero overhead)
+- ⚡ **Stops 14 additional services** (Update Orchestrator, Delivery Optimization, Print Spooler, etc.)
+- 🛡️ **Preserves anti-cheat** (Riot Vanguard, EasyAntiCheat, BattlEye, PunkBuster)
+- 🎨 **Disables visual effects** (transparency, animations)
+- ⚙️ **Ultimate performance power plan**
+
+**Built-in game launchers** (in GUI mode) let you start Steam, Riot, EA, Epic, Battle.net, GOG, and Ubisoft Connect directly from the app while Explorer is stopped.
+
+```bash
+# Restore everything when done
+syscleaner extreme --disable
+```
+
+### 🛠️ Advanced System Tools
+
+```bash
+# Deep registry cleaning with automatic backup
+syscleaner clean --registry
+
+# Scan Windows system image for corruption
+# (uses DISM + SFC under the hood)
+
+# Remove 21 pre-installed bloatware apps
+# Disable Windows telemetry, tracking services, and scheduled tasks
+# All available via the GUI Tools panel
+```
+
+**Tools included:**
+- **Deep Registry Clean** - MUI cache, RecentDocs, UserAssist, MountPoints2, SharedDLLs, orphaned uninstall entries (with automatic backup)
+- **System Image Repair** - DISM ScanHealth/RestoreHealth + SFC scannow
+- **Windows Debloater** - Removes 21 pre-installed apps (3D Viewer, Solitaire, Mixed Reality, Your Phone, etc.)
+- **Telemetry Blocker** - Disables 3 tracking services, 6 scheduled tasks, and 2 registry entries (similar to O&O ShutUp10)
+
+### 🖥️ Graphical Interface (GUI)
+
+**Modern dark-themed GUI with real-time monitoring:**
+
+```bash
+# Build with GUI support
+go build -tags gui -ldflags="-s -w" -o syscleaner-gui.exe
+
+# Launch
+syscleaner-gui.exe gui
+```
+
+**GUI Tabs:**
+- **Dashboard** - Performance score, CPU/RAM/disk metrics, mode status
+- **Extreme Mode** - One-click toggle, game launcher buttons
+- **Clean** - Checkbox categories, preview analysis, progress tracking
+- **Optimize** - Startup, network, registry, disk optimization
+- **Tools** - Registry clean, DISM scan/repair, debloat, telemetry
+- **Monitor** - Real-time resource graphs and system event log
+
+**Theme:** Dark background (RGB 18,18,18) with flame orange accents (RGB 255,85,0)
 
 ### 🤖 Background Daemon Service
 
@@ -169,9 +239,21 @@ go build -ldflags="-s -w" -o syscleaner.exe
 | Build Type | Command | Size | Use Case |
 |------------|---------|------|----------|
 | **Development** | `go build -o syscleaner.exe` | ~20 MB | Testing, debugging |
-| **Release** | `go build -ldflags="-s -w" -o syscleaner.exe` | ~10 MB | Distribution |
-| **GUI Mode** | `go build -ldflags="-s -w -H=windowsgui" -o syscleaner.exe` | ~10 MB | No console window |
+| **Release (CLI)** | `go build -ldflags="-s -w" -o syscleaner.exe` | ~10 MB | Distribution |
+| **GUI** | `go build -tags gui -ldflags="-s -w -H=windowsgui" -o syscleaner-gui.exe` | ~15 MB | Graphical interface |
+| **No Console** | `go build -ldflags="-s -w -H=windowsgui" -o syscleaner.exe` | ~10 MB | Background/daemon |
 | **Static** | `$env:CGO_ENABLED=0; go build -ldflags="-s -w" -o syscleaner.exe` | ~11 MB | Maximum compatibility |
+
+**GUI build requires additional setup:**
+```powershell
+# Add Fyne dependency first
+go get fyne.io/fyne/v2@v2.4.3
+go mod tidy
+
+# Requires a C compiler (CGO). On Windows, install MSYS2:
+# https://www.msys2.org/ then: pacman -S mingw-w64-x86_64-gcc
+# Ensure CGO_ENABLED=1 (default when gcc is available)
+```
 
 **Cross-Compilation:**
 ```powershell
@@ -210,7 +292,7 @@ if (Test-Path syscleaner.exe) {
 | Large binary size | Use `-ldflags="-s -w"` flag to strip debug symbols |
 | Antivirus blocking | Add exception or build as static: `$env:CGO_ENABLED=0` |
 
-For complete compilation guide including optimization flags, CI/CD examples, and advanced techniques, see [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md).
+For complete compilation guide including optimization flags, CI/CD examples, and advanced techniques, see [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md).
 
 ---
 
@@ -331,6 +413,27 @@ System Resources:
   Services Stopped: 6
 ```
 
+### Extreme Mode Commands
+
+```bash
+# Enable extreme performance mode
+syscleaner extreme --enable
+
+# Check status
+syscleaner extreme --status
+
+# Disable and restore system
+syscleaner extreme --disable
+```
+
+### GUI Mode
+
+```bash
+# Build with GUI support first (see Build section)
+# Then launch
+syscleaner gui
+```
+
 ### Optimization Commands
 
 ```bash
@@ -438,25 +541,32 @@ See [ROADMAP.md](ROADMAP.md) for the complete development plan.
 - [x] System optimizer
 - [x] CLI interface
 
-### Phase 2 - GUI & Polish 🔄 **IN PROGRESS**
-- [ ] Windows GUI with system tray
-- [ ] Real-time resource dashboard
-- [ ] Configuration file support
-- [ ] Logging system
-- [ ] MSI installer
+### Phase 2 - Extreme Mode & Advanced Tools ✅ **COMPLETE**
+- [x] Extreme Performance Mode (stops Explorer shell)
+- [x] Anti-cheat service preservation
+- [x] Game launcher panel
+- [x] Deep registry cleaning with backup
+- [x] DISM system image scan/repair
+- [x] Windows debloater (21 apps)
+- [x] Telemetry/tracking disabler
 
-### Phase 3 - Advanced Features 📋 **PLANNED**
+### Phase 3 - GUI & Polish ✅ **COMPLETE**
+- [x] Fyne.io GUI with dark theme
+- [x] Real-time resource dashboard
+- [x] Extreme mode toggle and game launchers
+- [x] Cleaning panel with preview
+- [x] Optimization panel
+- [x] Advanced tools panel
+- [x] Live monitoring with event log
+
+### Phase 4 - Future Enhancements 📋 **PLANNED**
 - [ ] Per-game optimization profiles
+- [ ] System tray integration
+- [ ] Configuration file support
+- [ ] MSI installer
 - [ ] Duplicate file finder
-- [ ] Registry backup/restore
-- [ ] Advanced process manager
-- [ ] Network traffic monitoring
-
-### Phase 4 - Pro Features 💡 **FUTURE**
 - [ ] Driver update checking
 - [ ] Secure file deletion
-- [ ] Disk usage analyzer
-- [ ] Privacy protection tools
 
 ---
 
@@ -510,7 +620,7 @@ git push origin feature/amazing-feature
 - Release: `go build -ldflags="-s -w" -o syscleaner.exe` (optimized)
 - Static: `$env:CGO_ENABLED=0; go build -ldflags="-s -w" -o syscleaner.exe` (portable)
 
-See [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md) for advanced build techniques and [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+See [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md) for advanced build techniques and [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
@@ -580,9 +690,9 @@ $env:CGO_ENABLED=0
 go build -ldflags="-s -w" -o syscleaner.exe
 ```
 
-**For detailed troubleshooting, optimization flags, cross-compilation, and CI/CD examples, see [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md)**
+**For detailed troubleshooting, optimization flags, cross-compilation, and CI/CD examples, see [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md)**
 
-More troubleshooting in [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md) and [docs](https://github.com/YOUR_USERNAME/syscleaner/wiki).
+More troubleshooting in [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md) and [docs](https://github.com/YOUR_USERNAME/syscleaner/wiki).
 
 ---
 
@@ -608,6 +718,7 @@ Built with these amazing open-source projects:
 - [Cobra](https://github.com/spf13/cobra) - CLI framework
 - [gopsutil](https://github.com/shirou/gopsutil) - System metrics
 - [kardianos/service](https://github.com/kardianos/service) - Service management
+- [Fyne](https://fyne.io/) - Cross-platform GUI toolkit (optional, with `-tags gui`)
 
 ---
 

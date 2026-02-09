@@ -10,6 +10,7 @@ This guide provides detailed instructions for compiling SysCleaner from source c
 - [Quick Build (TL;DR)](#quick-build-tldr)
 - [Detailed Build Steps](#detailed-build-steps)
 - [Build Configurations](#build-configurations)
+- [GUI Build (Fyne.io)](#gui-build-fyneio)
 - [Cross-Compilation](#cross-compilation)
 - [Optimization Flags](#optimization-flags)
 - [Troubleshooting](#troubleshooting)
@@ -58,11 +59,17 @@ cd syscleaner
 # 2. Download dependencies
 go mod download
 
-# 3. Build optimized executable
-go build -ldflags="-s -w -H=windowsgui" -o syscleaner.exe
+# 3. Build CLI executable (includes extreme mode, all tools)
+go build -ldflags="-s -w" -o syscleaner.exe
 
 # 4. Run
 ./syscleaner.exe --help
+
+# 5. (Optional) Build GUI version with Fyne.io
+go get fyne.io/fyne/v2@v2.4.3
+go mod tidy
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o syscleaner-gui.exe
+./syscleaner-gui.exe gui
 ```
 
 ---
@@ -116,12 +123,15 @@ go mod verify
 go mod tidy
 ```
 
-**This downloads:**
+**This downloads (CLI dependencies):**
 - `github.com/spf13/cobra` - CLI framework
 - `github.com/shirou/gopsutil/v3` - System metrics
 - `github.com/kardianos/service` - Windows service management
 - `golang.org/x/sys` - System calls
 - All transitive dependencies
+
+**Additional GUI dependency (only needed with `-tags gui`):**
+- `fyne.io/fyne/v2` - Cross-platform GUI toolkit
 
 **Dependency verification:**
 ```powershell
@@ -237,9 +247,9 @@ go build -ldflags="-s -w -extldflags '-static'" -o syscleaner.exe
 
 ---
 
-### GUI Build (No Console Window)
+### No-Console Build
 
-**For background/daemon use:**
+**For background/daemon use (no console window):**
 ```powershell
 go build -ldflags="-s -w -H=windowsgui" -o syscleaner.exe
 ```
@@ -250,6 +260,85 @@ go build -ldflags="-s -w -H=windowsgui" -o syscleaner.exe
 - ❌ No visible console output
 
 **Use when:** Running as service/daemon
+
+---
+
+## GUI Build (Fyne.io)
+
+SysCleaner includes an optional graphical interface built with [Fyne.io](https://fyne.io/). The GUI is gated behind the `gui` build tag so the CLI can be built without any GUI dependencies.
+
+### Prerequisites for GUI Build
+
+1. **Go 1.21+** (same as CLI)
+2. **C compiler** (CGO is required by Fyne):
+   - **Windows**: Install [MSYS2](https://www.msys2.org/) and run `pacman -S mingw-w64-x86_64-gcc`
+   - **Linux**: `sudo apt install gcc libgl1-mesa-dev xorg-dev` (Debian/Ubuntu)
+   - **macOS**: Install Xcode command line tools: `xcode-select --install`
+3. **Fyne dependency**: Added to go.mod (see below)
+
+### Step 1: Add Fyne Dependency
+
+```powershell
+# From the project root
+go get fyne.io/fyne/v2@v2.4.3
+go mod tidy
+```
+
+### Step 2: Build the GUI Binary
+
+```powershell
+# Development build (with console for debugging)
+go build -tags gui -o syscleaner-gui.exe
+
+# Release build (no console window)
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o syscleaner-gui.exe
+```
+
+### Step 3: Launch the GUI
+
+```powershell
+# Launch with the gui subcommand
+./syscleaner-gui.exe gui
+```
+
+The GUI opens a tabbed interface with:
+- **Dashboard** - Real-time CPU/RAM/disk metrics, performance score
+- **Extreme Mode** - Toggle extreme performance, game launcher buttons
+- **Clean** - Checkbox-based cleaning with preview and progress
+- **Optimize** - Startup, network, registry, disk optimization
+- **Tools** - Deep registry clean, DISM scan/repair, debloat, telemetry
+- **Monitor** - Live resource graphs and system event log
+
+### GUI Theme
+
+The GUI uses a custom dark theme:
+- Background: RGB(18, 18, 18)
+- Accent color: RGB(255, 85, 0) (flame orange)
+- Foreground: RGB(230, 230, 230)
+
+### Single Binary Approach
+
+You can ship one binary that supports both CLI and GUI:
+
+```powershell
+go build -tags gui -ldflags="-s -w" -o syscleaner.exe
+
+# CLI usage (default)
+./syscleaner.exe analyze
+./syscleaner.exe extreme --enable
+
+# GUI usage
+./syscleaner.exe gui
+```
+
+### Without the GUI Tag
+
+If you build without `-tags gui`, the `gui` subcommand prints a helpful message:
+
+```
+GUI mode is not available in this build.
+Rebuild with: go build -tags gui
+```
 
 ---
 
@@ -327,9 +416,16 @@ foreach ($arch in $architectures) {
 ### Build Tags
 
 ```powershell
+# Build with GUI (Fyne.io)
+go build -tags gui -ldflags="-s -w" -o syscleaner-gui.exe
+
 # Build with specific features
 go build -tags="release production" -o syscleaner.exe
 ```
+
+| Tag | Effect |
+|-----|--------|
+| `gui` | Includes Fyne.io GUI (requires fyne.io/fyne/v2 in go.mod) |
 
 ---
 
@@ -551,6 +647,44 @@ go build -i -o syscleaner.exe
 
 ---
 
+### Issue: GUI build fails with "cannot find package fyne.io/fyne/v2"
+
+**Cause:** Fyne dependency not added to go.mod
+
+**Solution:**
+```powershell
+# Add the Fyne dependency
+go get fyne.io/fyne/v2@v2.4.3
+go mod tidy
+
+# Then build with the gui tag
+go build -tags gui -o syscleaner-gui.exe
+```
+
+---
+
+### Issue: GUI build fails with CGO errors
+
+**Cause:** Fyne requires a C compiler (CGO)
+
+**Solution:**
+```powershell
+# Windows: Install MSYS2 and MinGW-w64
+# From MSYS2 terminal:
+pacman -S mingw-w64-x86_64-gcc
+
+# Ensure MinGW bin is in PATH
+$env:PATH += ";C:\msys64\mingw64\bin"
+
+# Verify
+gcc --version
+
+# Then rebuild
+go build -tags gui -o syscleaner-gui.exe
+```
+
+---
+
 ### Issue: "module requires Go 1.21"
 
 **Cause:** Older Go version installed
@@ -727,19 +861,31 @@ jobs:
         with:
           go-version: '1.21'
       
-      - name: Build
+      - name: Build CLI
         run: |
           go mod download
           go build -ldflags="-s -w" -o syscleaner.exe
-      
+
+      - name: Build GUI
+        run: |
+          go get fyne.io/fyne/v2@v2.4.3
+          go mod tidy
+          go build -tags gui -ldflags="-s -w -H=windowsgui" -o syscleaner-gui.exe
+
       - name: Test
         run: go test ./...
-      
-      - name: Upload artifact
+
+      - name: Upload CLI artifact
         uses: actions/upload-artifact@v3
         with:
-          name: syscleaner-windows-amd64
+          name: syscleaner-cli-windows-amd64
           path: syscleaner.exe
+
+      - name: Upload GUI artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: syscleaner-gui-windows-amd64
+          path: syscleaner-gui.exe
 ```
 
 ---
@@ -748,11 +894,12 @@ jobs:
 
 You now have multiple ways to build SysCleaner:
 
-- **Quick build**: `go build -o syscleaner.exe`
-- **Release build**: `go build -ldflags="-s -w" -o syscleaner.exe`
+- **Quick CLI build**: `go build -o syscleaner.exe`
+- **Release CLI build**: `go build -ldflags="-s -w" -o syscleaner.exe`
+- **GUI build**: `go build -tags gui -ldflags="-s -w -H=windowsgui" -o syscleaner-gui.exe`
 - **Script build**: `./build.ps1 -Release`
 
-For most users, the **release build** is recommended for the best balance of size and performance.
+For most users, the **release CLI build** is recommended. Add the GUI build if you want the graphical interface with dashboard, extreme mode panel, and real-time monitoring.
 
 If you encounter issues not covered here, please:
 - Check the [Troubleshooting](#troubleshooting) section
