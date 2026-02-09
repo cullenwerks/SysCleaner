@@ -152,7 +152,7 @@ func (r *scoreRingRenderer) Refresh() {
 	// The ring appears to fill as the score increases
 	percentage := r.score.displayScore / 100.0
 	if percentage > 0 {
-		r.ring.StrokeWidth = 10 + (percentage * 5) // Thicker stroke as score increases
+		r.ring.StrokeWidth = float32(10 + (percentage * 5)) // Thicker stroke as score increases
 	}
 
 	canvas.Refresh(r.ring)
