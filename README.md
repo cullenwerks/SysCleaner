@@ -144,25 +144,73 @@ syscleaner analyze
 ### Build from Source
 
 **Requirements:**
-- Go 1.21 or higher
+- Go 1.21 or higher ([Download](https://go.dev/dl/))
 - Windows 10/11
+- Git (optional)
 
-```bash
-# Clone repository
+**Quick Build:**
+```powershell
+# 1. Clone or download repository
 git clone https://github.com/YOUR_USERNAME/syscleaner.git
 cd syscleaner
 
-# Download dependencies
+# 2. Download dependencies
 go mod download
 
-# Build (optimized)
+# 3. Build optimized executable
 go build -ldflags="-s -w" -o syscleaner.exe
 
-# Run
+# 4. Verify build
 ./syscleaner.exe --help
 ```
 
-See [BUILD.md](BUILD.md) for detailed build instructions.
+**Build Configurations:**
+
+| Build Type | Command | Size | Use Case |
+|------------|---------|------|----------|
+| **Development** | `go build -o syscleaner.exe` | ~20 MB | Testing, debugging |
+| **Release** | `go build -ldflags="-s -w" -o syscleaner.exe` | ~10 MB | Distribution |
+| **GUI Mode** | `go build -ldflags="-s -w -H=windowsgui" -o syscleaner.exe` | ~10 MB | No console window |
+| **Static** | `$env:CGO_ENABLED=0; go build -ldflags="-s -w" -o syscleaner.exe` | ~11 MB | Maximum compatibility |
+
+**Cross-Compilation:**
+```powershell
+# Build for different architectures
+$env:GOOS="windows"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o syscleaner-amd64.exe
+$env:GOOS="windows"; $env:GOARCH="386"; go build -ldflags="-s -w" -o syscleaner-386.exe
+$env:GOOS="windows"; $env:GOARCH="arm64"; go build -ldflags="-s -w" -o syscleaner-arm64.exe
+```
+
+**Automated Build Script:**
+```powershell
+# Create build.ps1
+@"
+param([string]`$Version = "dev")
+Write-Host "Building SysCleaner `$Version..."
+go mod download
+go build -ldflags="-s -w -X 'main.Version=`$Version'" -o syscleaner.exe
+if (Test-Path syscleaner.exe) {
+    `$size = (Get-Item syscleaner.exe).Length / 1MB
+    Write-Host "Build successful! Size: `$([math]::Round(`$size, 2)) MB"
+    ./syscleaner.exe --version
+}
+"@ | Out-File build.ps1
+
+# Run build
+./build.ps1 -Version "1.0.0"
+```
+
+**Troubleshooting Builds:**
+
+| Issue | Solution |
+|-------|----------|
+| "go: command not found" | Install Go from https://go.dev/dl/ and add to PATH |
+| "cannot find package" | Run `go mod download` and `go mod tidy` |
+| Access denied | Close running instances: `taskkill /F /IM syscleaner.exe` |
+| Large binary size | Use `-ldflags="-s -w"` flag to strip debug symbols |
+| Antivirus blocking | Add exception or build as static: `$env:CGO_ENABLED=0` |
+
+For complete compilation guide including optimization flags, CI/CD examples, and advanced techniques, see [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md).
 
 ---
 
@@ -437,12 +485,18 @@ cd syscleaner
 # Create a feature branch
 git checkout -b feature/amazing-feature
 
+# Install dependencies
+go mod download
+
 # Make your changes
 # ... edit files ...
 
 # Test your changes
 go test ./...
-go build -o syscleaner.exe
+
+# Build and test executable
+go build -ldflags="-s -w" -o syscleaner.exe
+./syscleaner.exe --help
 
 # Commit and push
 git commit -m "Add amazing feature"
@@ -451,7 +505,12 @@ git push origin feature/amazing-feature
 # Open a Pull Request on GitHub
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+**Build Configurations for Testing:**
+- Development: `go build -o syscleaner.exe` (faster, includes debug symbols)
+- Release: `go build -ldflags="-s -w" -o syscleaner.exe` (optimized)
+- Static: `$env:CGO_ENABLED=0; go build -ldflags="-s -w" -o syscleaner.exe` (portable)
+
+See [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md) for advanced build techniques and [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
@@ -491,19 +550,39 @@ syscleaner daemon --install
 
 ### Build Errors
 
-```bash
-# Update dependencies
+**Common build issues:**
+
+```powershell
+# Issue: Dependencies not found
+# Solution: Re-download dependencies
 go mod download
+go mod verify
 go mod tidy
 
-# Clean build cache
+# Issue: Build cache problems
+# Solution: Clear cache and rebuild
 go clean -cache
-
-# Rebuild
+go clean -modcache
 go build -o syscleaner.exe
+
+# Issue: Permission errors
+# Solution: Close running instances
+taskkill /F /IM syscleaner.exe
+# Then rebuild
+
+# Issue: Large binary size
+# Solution: Use optimization flags
+go build -ldflags="-s -w" -trimpath -o syscleaner.exe
+
+# Issue: Antivirus blocking build
+# Solution: Add exception or use static build
+$env:CGO_ENABLED=0
+go build -ldflags="-s -w" -o syscleaner.exe
 ```
 
-More troubleshooting in [BUILD.md](BUILD.md) and [docs](https://github.com/YOUR_USERNAME/syscleaner/wiki).
+**For detailed troubleshooting, optimization flags, cross-compilation, and CI/CD examples, see [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md)**
+
+More troubleshooting in [COMPILATION_GUIDE.md](COMPILATION_GUIDE.md) and [docs](https://github.com/YOUR_USERNAME/syscleaner/wiki).
 
 ---
 
