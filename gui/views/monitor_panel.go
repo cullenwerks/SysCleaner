@@ -36,7 +36,6 @@ func NewMonitorPanel() fyne.CanvasObject {
 	ramTrimCountLabel := widget.NewLabel("Trim Count: 0")
 	ramLastTrimLabel := widget.NewLabel("Last Trim: Never")
 
-	ramTotalBar := widget.NewProgressBar()
 	ramUsedBar := widget.NewProgressBar()
 	ramFreeBar := widget.NewProgressBar()
 	ramStandbyBar := widget.NewProgressBar()
