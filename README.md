@@ -6,6 +6,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.21+-blue.svg)](https://go.dev/dl/)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue.svg)](https://www.microsoft.com/windows)
+[![Arch](https://img.shields.io/badge/arch-x64%20%7C%20ARM64-blue.svg)](https://go.dev/dl/)
 
 **SysCleaner v2.0** is a comprehensive Windows optimization tool built for gamers and power users. With an intuitive GUI, automated RAM monitoring, CPU priority management, and extreme performance modes, it delivers everything you need to maximize your system's potential.
 
@@ -153,7 +154,9 @@
 ### Download Pre-Built Binary (Recommended)
 
 1. Go to [Releases](https://github.com/cullenwerks/SysCleaner/releases)
-2. Download `SysCleaner-v2.0-Windows-amd64.zip`
+2. Download the ZIP for your architecture:
+   - **Intel/AMD (most PCs):** `SysCleaner-v2.0-Windows-x64.zip`
+   - **ARM (Surface Pro X, Snapdragon laptops):** `SysCleaner-v2.0-Windows-arm64.zip`
 3. Extract anywhere
 4. Run `SysCleaner.exe`
 5. **Grant Administrator rights when prompted** (required for most features)
@@ -165,7 +168,7 @@
 - GCC compiler ([TDM-GCC](https://jmeubank.github.io/tdm-gcc/) recommended)
 - Windows 10/11
 
-**Quick Build:**
+**Quick Build (x64):**
 ```powershell
 # 1. Clone repository
 git clone https://github.com/cullenwerks/SysCleaner.git
@@ -174,11 +177,19 @@ cd SysCleaner
 # 2. Download dependencies
 go mod download
 
-# 3. Build SysCleaner
-go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
+# 3. Build SysCleaner (x64)
+$env:GOARCH="amd64"
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-x64.exe
 
 # 4. Run
-.\SysCleaner.exe
+.\SysCleaner-x64.exe
+```
+
+**Build for ARM64:**
+```powershell
+# Build native ARM64 binary (for Surface Pro X, Snapdragon PCs, etc.)
+$env:GOARCH="arm64"
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-arm64.exe
 ```
 
 **With Custom Icon:**
@@ -189,17 +200,28 @@ go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
 # 2. Install rsrc tool
 go install github.com/akavel/rsrc@latest
 
-# 3. Compile icon resource
-rsrc -ico assets/icon.ico -o rsrc_windows_amd64.syso
+# 3. Compile icon resource (specify target architecture)
+rsrc -ico assets/icon.ico -arch amd64 -o rsrc_windows_amd64.syso   # for x64
+rsrc -ico assets/icon.ico -arch arm64 -o rsrc_windows_arm64.syso   # for ARM64
 
 # 4. Build (icon will be embedded automatically)
-go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
+$env:GOARCH="amd64"
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner-x64.exe
 ```
 
 **Using Build Script:**
 ```powershell
-# Easy build with automated icon handling
+# Build for x64 (default)
 .\build.ps1
+
+# Build for ARM64
+.\build.ps1 -Arch arm64
+
+# Build for both architectures at once
+.\build.ps1 -Arch all
+
+# Build both architectures + create release ZIPs
+.\build-all.ps1 -Package
 
 # Debug build (with console window for logs)
 .\build.ps1 -Debug
@@ -344,6 +366,7 @@ Real-world improvements on AMD Ryzen 5 5600X, 16GB RAM, NVMe SSD:
 - [ ] Per-game optimization profiles (save/load settings)
 - [ ] System tray integration (minimize to tray)
 - [ ] Configuration file support (YAML/JSON)
+- [x] Native Windows ARM64 support
 - [ ] MSI installer for easier distribution
 - [ ] Duplicate file finder
 - [ ] Driver update checking
