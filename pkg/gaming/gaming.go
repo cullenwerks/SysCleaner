@@ -2,6 +2,7 @@ package gaming
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -11,6 +12,8 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/process"
+
+	"syscleaner/pkg/admin"
 )
 
 // Config holds gaming mode configuration.
@@ -68,6 +71,10 @@ var servicesToStop = []string{
 
 // Enable activates gaming mode.
 func Enable(config Config) error {
+	if err := admin.RequireElevation("Gaming Mode"); err != nil {
+		return err
+	}
+
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -77,22 +84,27 @@ func Enable(config Config) error {
 
 	if runtime.GOOS == "windows" {
 		// Stop non-essential services
+		log.Println("[SysCleaner] Stopping background services for gaming...")
 		for _, svc := range servicesToStop {
+			log.Printf("[SysCleaner] Stopping service: %s", svc)
 			if err := stopService(svc); err == nil {
 				stoppedServices = append(stoppedServices, svc)
 			}
 		}
 
 		// Set high performance power plan
+		log.Println("[SysCleaner] Setting high performance power plan...")
 		runCmd("powercfg", "/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c")
 
 		// Optimize network
+		log.Println("[SysCleaner] Optimizing network settings...")
 		runCmd("netsh", "int", "tcp", "set", "global", "autotuninglevel=normal")
 		runCmd("netsh", "int", "tcp", "set", "global", "chimney=enabled")
 		runCmd("netsh", "int", "tcp", "set", "global", "dca=enabled")
 	}
 
 	gamingModeEnabled = true
+	log.Println("[SysCleaner] Gaming mode enabled.")
 
 	if config.AutoDetectGames {
 		monitorDone = make(chan struct{})
@@ -119,19 +131,22 @@ func Disable() error {
 
 	if runtime.GOOS == "windows" {
 		// Restart stopped services
+		log.Println("[SysCleaner] Restoring background services...")
 		for _, svc := range stoppedServices {
+			log.Printf("[SysCleaner] Starting service: %s", svc)
 			startService(svc)
 		}
 		stoppedServices = nil
 
 		// Restore balanced power plan
+		log.Println("[SysCleaner] Restoring balanced power plan...")
 		runCmd("powercfg", "/setactive", "381b4222-f694-41f0-9685-ff5bb260df2e")
 	}
 
 	// Restore process priorities
+	log.Println("[SysCleaner] Restoring process priorities...")
 	for pid := range originalPriority {
 		if runtime.GOOS == "windows" {
-			// Restore normal priority class (32 = normal)
 			runCmd("wmic", "process", "where",
 				fmt.Sprintf("processid=%d", pid),
 				"CALL", "setpriority", "32")
@@ -140,6 +155,7 @@ func Disable() error {
 	originalPriority = make(map[int32]int32)
 
 	gamingModeEnabled = false
+	log.Println("[SysCleaner] Gaming mode disabled.")
 	return nil
 }
 
@@ -250,7 +266,8 @@ func boostProcessPriority(p *process.Process) {
 	originalPriority[p.Pid] = nice
 
 	if runtime.GOOS == "windows" {
-		// On Windows, use wmic to set high priority (128 = High)
+		name, _ := p.Name()
+		log.Printf("[SysCleaner] Boosting priority for game process: %s (PID: %d)", name, p.Pid)
 		runCmd("wmic", "process", "where",
 			fmt.Sprintf("processid=%d", p.Pid),
 			"CALL", "setpriority", "128")
@@ -258,11 +275,13 @@ func boostProcessPriority(p *process.Process) {
 }
 
 func stopService(name string) error {
-	return runCmd("sc.exe", "stop", name)
+	log.Printf("[SysCleaner] Requesting service stop: %s", name)
+	return runCmd("net", "stop", name)
 }
 
 func startService(name string) error {
-	return runCmd("sc.exe", "start", name)
+	log.Printf("[SysCleaner] Requesting service start: %s", name)
+	return runCmd("net", "start", name)
 }
 
 func runCmd(name string, args ...string) error {

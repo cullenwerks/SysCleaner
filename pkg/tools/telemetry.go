@@ -2,8 +2,11 @@ package tools
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"runtime"
+
+	"syscleaner/pkg/admin"
 )
 
 // TelemetryResult holds the results of telemetry disabling.
@@ -19,6 +22,10 @@ func DisableTelemetry() (*TelemetryResult, error) {
 		return nil, fmt.Errorf("telemetry disabling only available on Windows")
 	}
 
+	if err := admin.RequireElevation("Telemetry Management"); err != nil {
+		return nil, err
+	}
+
 	result := &TelemetryResult{}
 
 	// Disable telemetry services
@@ -28,12 +35,14 @@ func DisableTelemetry() (*TelemetryResult, error) {
 		"RetailDemo",
 	}
 
+	log.Println("[SysCleaner] Disabling telemetry services...")
 	for _, svc := range telemetryServices {
+		log.Printf("[SysCleaner] Disabling service: %s", svc)
 		cmd := exec.Command("sc", "config", svc, "start=disabled")
 		if cmd.Run() == nil {
 			result.ServicesDisabled++
 		}
-		exec.Command("sc", "stop", svc).Run()
+		exec.Command("net", "stop", svc).Run()
 	}
 
 	// Disable telemetry scheduled tasks
@@ -46,7 +55,9 @@ func DisableTelemetry() (*TelemetryResult, error) {
 		"\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector",
 	}
 
+	log.Println("[SysCleaner] Disabling telemetry scheduled tasks...")
 	for _, task := range telemetryTasks {
+		log.Printf("[SysCleaner] Disabling task: %s", task)
 		cmd := exec.Command("schtasks", "/Change", "/TN", task, "/Disable")
 		if cmd.Run() == nil {
 			result.TasksDisabled++
@@ -63,7 +74,9 @@ func DisableTelemetry() (*TelemetryResult, error) {
 		{"HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Policies\\DataCollection", "AllowTelemetry", "0"},
 	}
 
+	log.Println("[SysCleaner] Applying telemetry registry settings...")
 	for _, entry := range regEntries {
+		log.Printf("[SysCleaner] Setting %s\\%s = %s", entry.key, entry.name, entry.value)
 		cmd := exec.Command("reg", "add", entry.key, "/v", entry.name,
 			"/t", "REG_DWORD", "/d", entry.value, "/f")
 		if cmd.Run() == nil {
@@ -71,6 +84,8 @@ func DisableTelemetry() (*TelemetryResult, error) {
 		}
 	}
 
+	log.Printf("[SysCleaner] Telemetry management complete: %d services, %d tasks, %d registry entries",
+		result.ServicesDisabled, result.TasksDisabled, result.RegistryChanged)
 	return result, nil
 }
 
