@@ -1,44 +1,40 @@
-# SysCleaner
+# SysCleaner v2.0
 
-> **Free, open-source Windows system optimizer with gaming mode**  
-> Because people shouldn't have to pay for basic system maintenance.
+> **Free, open-source Windows system optimizer with extreme gaming mode**
+> Powerful GUI application for maximum PC performance
 
-[![Build Status](https://github.com/YOUR_USERNAME/syscleaner/workflows/Build%20and%20Test/badge.svg)](https://github.com/YOUR_USERNAME/syscleaner/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.21+-blue.svg)](https://go.dev/dl/)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue.svg)](https://www.microsoft.com/windows)
-[![Downloads](https://img.shields.io/github/downloads/YOUR_USERNAME/syscleaner/total.svg)](https://github.com/YOUR_USERNAME/syscleaner/releases)
 
-**SysCleaner** is a comprehensive Windows optimization tool that goes beyond traditional cleaners like CCleaner. Built for gamers and power users, it features intelligent gaming mode that automatically optimizes your system when you launch games.
+**SysCleaner v2.0** is a comprehensive Windows optimization tool built for gamers and power users. With an intuitive GUI, automated RAM monitoring, CPU priority management, and extreme performance modes, it delivers everything you need to maximize your system's potential.
 
-```bash
-# Quick start
-syscleaner analyze          # See what it can do for you
-syscleaner clean --all      # Clean everything
-syscleaner gaming --enable  # Activate gaming mode
-syscleaner extreme --enable # Maximum performance (stops Explorer shell)
-syscleaner daemon --install # Auto-optimize forever
-syscleaner gui              # Launch graphical interface
-```
+## 🔥 What's New in v2.0
+
+- ✅ **Animated GUI** - Modern dark theme with smooth animations
+- ✅ **RAM Monitor** - Automatic standby memory trimming in extreme mode
+- ✅ **CPU Priority Manager** - Permanent per-process priority settings
+- ✅ **60+ Service Optimizations** - Comprehensive extreme gaming mode
+- ✅ **27+ Cleaning Categories** - CCleaner-style granular control
+- ✅ **Timeout Protection** - Never hangs on locked files
+- ✅ **Live Monitoring** - Real-time system stats and event log
 
 ---
 
 ## 🎮 Why SysCleaner?
 
-| Feature | CCleaner | SysCleaner |
-|---------|----------|------------|
+| Feature | CCleaner | SysCleaner v2.0 |
+|---------|----------|-----------------|
 | **Price** | $29.95/year | **FREE forever** |
+| **RAM Monitoring** | ❌ | ✅ Auto-trim standby memory |
+| **CPU Priority Manager** | ❌ | ✅ Permanent registry settings |
 | **Extreme Performance Mode** | ❌ | ✅ Stops Explorer shell for max FPS |
 | **Gaming Mode** | ❌ | ✅ Auto-detect & optimize |
-| **GUI Dashboard** | Limited | ✅ Real-time monitoring |
-| **Windows Debloating** | ❌ | ✅ Removes 21 bloatware apps |
-| **Telemetry Blocking** | ❌ | ✅ O&O ShutUp10 style |
-| **DISM Image Repair** | ❌ | ✅ Scan & repair |
-| **Auto-Optimization** | ❌ | ✅ Background daemon |
+| **Modern GUI** | Basic | ✅ Animated dark theme |
+| **27+ Clean Categories** | Basic | ✅ Full CCleaner-style control |
+| **Timeout Protection** | ❌ | ✅ Never hangs |
 | **Open Source** | ❌ | ✅ MIT License |
 | **Telemetry/Tracking** | ✅ Yes | ❌ **None** |
-| **Bloatware** | ✅ Bundled software | ❌ **None** |
-| **Network Optimization** | ❌ | ✅ Gaming-focused |
 
 **No subscriptions. No tracking. No bloat. Just performance.**
 
@@ -46,434 +42,277 @@ syscleaner gui              # Launch graphical interface
 
 ## ✨ Features
 
-### 🧹 Deep System Cleaning
-- **Temporary Files** - Windows Temp, User Temp, AppData caches
-- **Browser Caches** - Chrome, Firefox, Edge, Opera
-- **Registry Optimization** - Removes invalid entries, dead references
-- **Prefetch Cache** - Cleans Windows prefetch directory
-- **Thumbnail Cache** - Removes thumbnail database files
-- **Log Files** - Cleans old system and application logs
-- **Recycle Bin** - Empty with one command
-- **Dry-Run Mode** - Preview before deleting
+### 🎨 Modern Graphical Interface
 
-### 🎮 Gaming Mode (The Game Changer)
+**Beautiful dark-themed GUI with 7 tabs:**
+
+- **Dashboard** - Animated performance score ring, real-time CPU/RAM/Disk metrics
+- **Extreme Mode** - One-click maximum performance with game launcher panel
+- **Clean** - 27+ cleaning categories with collapsible sections and "Select All" toggles
+- **Optimize** - Startup programs, network optimization, registry tuning, disk optimization
+- **Tools** - Registry cleanup, DISM scan/repair, Windows debloater, telemetry blocker
+- **CPU Priority** - Manage permanent process priorities with presets for popular games
+- **Monitor** - Live resource graphs, RAM monitoring stats, event log
+
+**Theme:** Dark (#121212) with flame orange (#FF5500) accents, transitions to red (#DC1E1E) in extreme mode
+
+### 🧹 Deep System Cleaning
+
+**27+ Categories (CCleaner-Style):**
+
+**System:**
+- Windows Temp, User Temp, Windows Update Cache, Windows Installer Cache
+- Prefetch (30+ days), Crash Dumps, Error Reports (WER)
+- Thumbnail Cache, Icon Cache, Font Cache, DirectX Shader Cache
+- DNS Cache, Windows Logs, Event Logs, Delivery Optimization, Recycle Bin
+
+**Applications:**
+- Chrome, Firefox, Edge, Brave, Opera (all profiles)
+- Discord, Spotify, Steam, Teams, VS Code, Java
+
+**Group Cleaning:**
+```
+✓ Clean All      - Everything
+✓ System         - All 16 system categories
+✓ Browsers       - All 5 browser categories
+✓ Applications   - All 6 application categories
+```
+
+**Never Hangs:**
+- Per-file timeout (2s) - skips locked files gracefully
+- Per-directory timeout (30s) - prevents infinite loops
+- Overall timeout (5 min) - always completes
+- Separate tracking for skipped files vs errors
+
+### 🎮 Gaming Mode
 
 **Automatically optimizes when you game:**
 
-```bash
-syscleaner gaming --enable
-# Launch League of Legends, Valorant, CS2, etc.
-# Gaming mode activates automatically!
-```
-
-**What it does:**
-- 🎯 **Auto-detects 15+ games** (LoL, Valorant, CS2, Fortnite, Apex, Overwatch, etc.)
-- ⚡ **Stops background services** (Windows Update, BITS, DiagTrack, Superfetch)
-- 🚀 **Boosts game CPU priority** (more CPU time for your game)
-- 💾 **Clears standby RAM** (frees up memory)
-- 🌐 **Optimizes network** (reduces latency by 10-25ms)
+- 🎯 **Auto-detects 15+ games** (League, Valorant, CS2, Fortnite, Apex, etc.)
+- ⚡ **Stops background services** (Windows Update, search indexing, telemetry)
+- 🚀 **Boosts game CPU priority** via Windows Task Manager API
+- 💾 **Optimizes memory** (clears standby RAM before gaming)
+- 🌐 **Network optimization** (TCP/IP tuning for lower latency)
 - ⚙️ **High-performance power plan** (no CPU throttling)
-- 📊 **Real-time monitoring** (tracks game performance)
-
-**Supported Games:**
-- League of Legends (all processes)
-- Valorant
-- Counter-Strike (CS:GO/CS2)
-- Fortnite
-- Apex Legends
-- Overwatch
-- Destiny 2
-- Minecraft
-- GTA V / Red Dead Redemption 2
-- The Witcher 3
-- All Steam, Epic, and Battle.net games
-
-*Easy to add more - just edit one line of code!*
 
 ### 🔥 Extreme Performance Mode
 
-**Maximum FPS - stops the Windows desktop shell:**
+**Maximum FPS - for competitive gaming:**
 
-```bash
-syscleaner extreme --enable
-```
-
-**What it does beyond Gaming Mode:**
-- 🔥 **Stops Windows Explorer** (no desktop/taskbar for zero overhead)
-- ⚡ **Stops 14 additional services** (Update Orchestrator, Delivery Optimization, Print Spooler, etc.)
-- 🛡️ **Preserves anti-cheat** (Riot Vanguard, EasyAntiCheat, BattlEye, PunkBuster)
+**What it does:**
+- 🔥 **Stops Windows Explorer** (no desktop/taskbar = zero overhead)
+- ⚡ **Stops 60+ non-essential services** (categorized and documented)
+- 💾 **Continuous RAM monitoring** (auto-trims standby memory when < 15% free)
+- 🛡️ **Preserves critical services** (Audio, GPU, Network, Anti-cheat)
 - 🎨 **Disables visual effects** (transparency, animations)
 - ⚙️ **Ultimate performance power plan**
+- 📱 **Closes 30+ background apps** (OneDrive, Teams, Discord, Spotify, etc.)
 
-**Built-in game launchers** (in GUI mode) let you start Steam, Riot, EA, Epic, Battle.net, GOG, and Ubisoft Connect directly from the app while Explorer is stopped.
+**Built-in game launchers** let you start Steam, Riot, EA, Epic, Battle.net while Explorer is stopped.
 
-```bash
-# Restore everything when done
-syscleaner extreme --disable
-```
+**RAM Monitor (Active in Extreme Mode):**
+- Displays Total, Used, Free, Standby memory
+- Auto-trims when free RAM < 15% (configurable)
+- Gentle trim first (low-priority pages), aggressive if needed
+- Never trims more often than every 30 seconds
+- Shows trim count and last trim timestamp
+- Manual "Trim Now" button
+
+### ⚡ CPU Priority Manager
+
+**Set permanent process priorities via Windows registry:**
+
+**Features:**
+- Set CPU, I/O, and Memory Page priority independently
+- Persistent across reboots (registry-based)
+- Quick presets for popular games:
+  - League of Legends (High/High/Normal)
+  - Valorant, CS2, Fortnite, Apex Legends
+- Table view of configured processes
+- Add/Remove via GUI or CLI
+- Takes effect next time process starts
+
+**Priority Levels:**
+- CPU: Idle, Below Normal, Normal, Above Normal, High (no Realtime for stability)
+- I/O: Very Low, Low, Normal, High
+- Page: Idle, Very Low, Low, Background, Default, Normal
 
 ### 🛠️ Advanced System Tools
 
-```bash
-# Deep registry cleaning with automatic backup
-syscleaner clean --registry
+**Available in Tools tab:**
 
-# Scan Windows system image for corruption
-# (uses DISM + SFC under the hood)
-
-# Remove 21 pre-installed bloatware apps
-# Disable Windows telemetry, tracking services, and scheduled tasks
-# All available via the GUI Tools panel
-```
-
-**Tools included:**
-- **Deep Registry Clean** - MUI cache, RecentDocs, UserAssist, MountPoints2, SharedDLLs, orphaned uninstall entries (with automatic backup)
-- **System Image Repair** - DISM ScanHealth/RestoreHealth + SFC scannow
-- **Windows Debloater** - Removes 21 pre-installed apps (3D Viewer, Solitaire, Mixed Reality, Your Phone, etc.)
-- **Telemetry Blocker** - Disables 3 tracking services, 6 scheduled tasks, and 2 registry entries (similar to O&O ShutUp10)
-
-### 🖥️ Graphical Interface (GUI)
-
-**Modern dark-themed GUI with real-time monitoring:**
-
-```bash
-# Build with GUI support
-go build -tags gui -ldflags="-s -w" -o syscleaner-gui.exe
-
-# Launch
-syscleaner-gui.exe gui
-```
-
-**GUI Tabs:**
-- **Dashboard** - Performance score, CPU/RAM/disk metrics, mode status
-- **Extreme Mode** - One-click toggle, game launcher buttons
-- **Clean** - Checkbox categories, preview analysis, progress tracking
-- **Optimize** - Startup, network, registry, disk optimization
-- **Tools** - Registry clean, DISM scan/repair, debloat, telemetry
-- **Monitor** - Real-time resource graphs and system event log
-
-**Theme:** Dark background (RGB 18,18,18) with flame orange accents (RGB 255,85,0)
-
-### 🤖 Background Daemon Service
-
-**Set it and forget it:**
-
-```bash
-syscleaner daemon --install  # One-time setup
-syscleaner daemon --start
-```
-
-**Daemon automatically:**
-- Enables gaming mode when you launch games
-- Runs scheduled cleanups (default: 3 AM daily)
-- Monitors system resources
-- Optimizes on-the-fly
-- Runs as Windows service (survives reboots)
-
-### ⚡ System Optimizer
-
-**One-click optimizations:**
-
-```bash
-syscleaner optimize --all
-```
-
-- **Startup Programs** - Disables unnecessary programs (30-60s faster boot)
-- **Network Stack** - Optimizes TCP/IP for gaming (lower latency)
-- **Registry** - Removes invalid entries and compacts
-- **Disk** - Auto-detects SSD vs HDD, enables TRIM or schedules defrag
-
-### 📊 System Analyzer
-
-**Know your system:**
-
-```bash
-syscleaner analyze
-```
-
-**Provides:**
-- Performance score (0-100) with visual indicator
-- Specific issues affecting your system
-- Actionable recommendations with exact commands
-- Disk space analysis (where your space went)
-- Startup program analysis
-- Expected improvements for each fix
+- **Deep Registry Clean** - MUI cache, RecentDocs, UserAssist, etc. (automatic backup)
+- **System Image Repair** - DISM ScanHealth/RestoreHealth + SFC /scannow
+- **Windows Debloater** - Removes 21 pre-installed bloatware apps
+- **Telemetry Blocker** - Disables tracking services and scheduled tasks
 
 ---
 
 ## 📥 Installation
 
-### Download Pre-Built Binary (Easiest)
+### Download Pre-Built Binary (Recommended)
 
-1. Go to [Releases](https://github.com/YOUR_USERNAME/syscleaner/releases)
-2. Download `syscleaner-windows-amd64.zip`
+1. Go to [Releases](https://github.com/cullenwerks/SysCleaner/releases)
+2. Download `SysCleaner-v2.0-Windows-amd64.zip`
 3. Extract anywhere
-4. Run PowerShell **as Administrator**
-5. Navigate to extracted folder
+4. Run `SysCleaner.exe`
+5. **Grant Administrator rights when prompted** (required for most features)
 
 ### Build from Source
 
 **Requirements:**
-- Go 1.21 or higher ([Download](https://go.dev/dl/))
+- Go 1.21+ ([Download](https://go.dev/dl/))
+- GCC compiler ([TDM-GCC](https://jmeubank.github.io/tdm-gcc/) recommended)
 - Windows 10/11
-- Git (optional)
 
 **Quick Build:**
 ```powershell
-# 1. Clone or download repository
-git clone https://github.com/YOUR_USERNAME/syscleaner.git
-cd syscleaner
+# 1. Clone repository
+git clone https://github.com/cullenwerks/SysCleaner.git
+cd SysCleaner
 
 # 2. Download dependencies
 go mod download
 
-# 3. Build optimized executable
-go build -ldflags="-s -w" -o syscleaner.exe
+# 3. Build SysCleaner
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
 
-# 4. Verify build
-./syscleaner.exe --help
+# 4. Run
+.\SysCleaner.exe
 ```
 
-**Build Configurations:**
-
-| Build Type | Command | Size | Use Case |
-|------------|---------|------|----------|
-| **Development** | `go build -o syscleaner.exe` | ~20 MB | Testing, debugging |
-| **Release (CLI)** | `go build -ldflags="-s -w" -o syscleaner.exe` | ~10 MB | Distribution |
-| **GUI** | `go build -tags gui -ldflags="-s -w -H=windowsgui" -o syscleaner-gui.exe` | ~15 MB | Graphical interface |
-| **No Console** | `go build -ldflags="-s -w -H=windowsgui" -o syscleaner.exe` | ~10 MB | Background/daemon |
-| **Static** | `$env:CGO_ENABLED=0; go build -ldflags="-s -w" -o syscleaner.exe` | ~11 MB | Maximum compatibility |
-
-**GUI build requires additional setup:**
+**With Custom Icon:**
 ```powershell
-# Add Fyne dependency first
-go get fyne.io/fyne/v2@v2.4.3
-go mod tidy
+# 1. Create icon (see assets/README.md for guide)
+# Save as assets/icon.ico
 
-# Requires a C compiler (CGO). On Windows, install MSYS2:
-# https://www.msys2.org/ then: pacman -S mingw-w64-x86_64-gcc
-# Ensure CGO_ENABLED=1 (default when gcc is available)
+# 2. Install rsrc tool
+go install github.com/akavel/rsrc@latest
+
+# 3. Compile icon resource
+rsrc -ico assets/icon.ico -o rsrc_windows_amd64.syso
+
+# 4. Build (icon will be embedded automatically)
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
 ```
 
-**Cross-Compilation:**
+**Using Build Script:**
 ```powershell
-# Build for different architectures
-$env:GOOS="windows"; $env:GOARCH="amd64"; go build -ldflags="-s -w" -o syscleaner-amd64.exe
-$env:GOOS="windows"; $env:GOARCH="386"; go build -ldflags="-s -w" -o syscleaner-386.exe
-$env:GOOS="windows"; $env:GOARCH="arm64"; go build -ldflags="-s -w" -o syscleaner-arm64.exe
+# Easy build with automated icon handling
+.\build.ps1
+
+# Debug build (with console window for logs)
+.\build.ps1 -Debug
+
+# Custom version
+.\build.ps1 -Version "2.0.1"
 ```
 
-**Automated Build Script:**
-```powershell
-# Create build.ps1
-@"
-param([string]`$Version = "dev")
-Write-Host "Building SysCleaner `$Version..."
-go mod download
-go build -ldflags="-s -w -X 'main.Version=`$Version'" -o syscleaner.exe
-if (Test-Path syscleaner.exe) {
-    `$size = (Get-Item syscleaner.exe).Length / 1MB
-    Write-Host "Build successful! Size: `$([math]::Round(`$size, 2)) MB"
-    ./syscleaner.exe --version
-}
-"@ | Out-File build.ps1
-
-# Run build
-./build.ps1 -Version "1.0.0"
-```
-
-**Troubleshooting Builds:**
-
-| Issue | Solution |
-|-------|----------|
-| "go: command not found" | Install Go from https://go.dev/dl/ and add to PATH |
-| "cannot find package" | Run `go mod download` and `go mod tidy` |
-| Access denied | Close running instances: `taskkill /F /IM syscleaner.exe` |
-| Large binary size | Use `-ldflags="-s -w"` flag to strip debug symbols |
-| Antivirus blocking | Add exception or build as static: `$env:CGO_ENABLED=0` |
-
-For complete compilation guide including optimization flags, CI/CD examples, and advanced techniques, see [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md).
+See [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md) for complete build instructions, optimization flags, icon creation, and troubleshooting.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1️⃣ Analyze Your System
+### 1️⃣ Launch SysCleaner
 
-```bash
-syscleaner analyze
+```powershell
+# Just double-click SysCleaner.exe
+# Or run from terminal:
+.\SysCleaner.exe
 ```
 
-**Output:**
-```
-📊 System Analysis Report
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💻 System Information:
-   OS: Windows 11
-   CPU: AMD Ryzen 5 5600X (6 cores)
-   RAM: 16.0 GB
-   Disk: 512.0 GB (234.5 GB free)
+**GUI opens immediately with Dashboard tab**
 
-⚡ Performance Score: 73/100
-   🟡 [████████████████████░░░░░░░░░░] 73%
+### 2️⃣ Check Your Performance Score
 
-⚠️  Issues Found (3):
-   1. 8.5 GB of disk space can be reclaimed
-   2. 5 unnecessary startup programs
-   3. RAM usage is high (82%)
+Dashboard shows:
+- Animated performance score (0-100) with color coding
+- Live CPU/RAM/Disk usage bars (smooth animations)
+- Current mode status (Gaming/Extreme)
+- System information
 
-💡 Recommendations:
-   1. Clean temporary files → syscleaner clean --all
-   2. Optimize startup → syscleaner optimize --startup
-   3. Enable gaming mode → syscleaner gaming --enable
-```
+### 3️⃣ Clean Your System
 
-### 2️⃣ Clean Your System
-
-```bash
-# Preview what will be cleaned
-syscleaner clean --all --dry-run
-
-# Actually clean
-syscleaner clean --all
-```
+**In the Clean tab:**
+1. Check categories you want to clean (or use "Select All" toggles)
+2. See estimated space reclaimable
+3. Click "Clean Now"
+4. Watch progress bar as each category is cleaned
+5. View results summary
 
 **Typical results:** 2-20 GB freed
 
-### 3️⃣ Enable Gaming Mode
+### 4️⃣ Enable Gaming Mode
 
-```bash
-syscleaner gaming --enable
-```
+**In the Extreme Mode tab:**
+1. Click "Enable Gaming Mode" button
+2. Launch your game
+3. Enjoy 5-15% better FPS and lower latency
 
-**Now launch your game and enjoy:**
-- 5-15% better FPS
-- 10-25ms lower latency
-- No stuttering from background tasks
+**Or enable Extreme Mode:**
+1. Click "Enable Extreme Mode" button
+2. Desktop disappears (Explorer stops)
+3. Use game launcher buttons to start your game
+4. Maximum performance mode active
+5. Click "Disable Extreme Mode" when done
 
-### 4️⃣ Install Background Daemon
+### 5️⃣ Set Game Priorities
 
-```bash
-syscleaner daemon --install
-syscleaner daemon --start
-```
-
-**Now gaming mode activates automatically when you play!**
+**In the CPU Priority tab:**
+1. Select a game preset (League, Valorant, CS2, etc.)
+2. Or manually enter process name and select priorities
+3. Click "Apply Priority"
+4. Settings persist across reboots
+5. Next time you launch that game, priority is already set!
 
 ---
 
-## 📖 Usage Guide
+## ⚠️ Important Information
 
-### Cleaning Commands
+### Administrator Rights Required
 
-```bash
-# Clean everything
-syscleaner clean --all
+Many features require administrator privileges:
+- ✅ Cleaning system directories
+- ✅ Service management (gaming/extreme modes)
+- ✅ Power plan changes
+- ✅ Network optimization
+- ✅ CPU priority registry modifications
+- ✅ RAM trimming operations
 
-# Clean specific items
-syscleaner clean --temp              # Temporary files only
-syscleaner clean --browser           # Browser caches only
-syscleaner clean --registry          # Registry only
+**Always run SysCleaner as Administrator**
 
-# Preview before cleaning
-syscleaner clean --all --dry-run
+### Safety First
 
-# Clean multiple categories
-syscleaner clean --temp --browser --logs
-```
+**Before first use:**
+1. Create a System Restore Point
+2. Close all important programs
+3. Test cleaning categories individually first
 
-### Gaming Mode Commands
+**SysCleaner is safe:**
+- ✅ Only deletes temp/cache files
+- ✅ Never touches personal documents
+- ✅ Open source - verify the code yourself
+- ✅ No telemetry or tracking
+- ✅ Community-tested
 
-```bash
-# Enable gaming mode
-syscleaner gaming --enable
+### Antivirus False Positives
 
-# Enable with custom settings
-syscleaner gaming --enable --cpu-boost 90 --ram-reserve 4
+System optimization tools often trigger antivirus warnings because they:
+- Modify registry (for priority settings, optimizations)
+- Stop/start Windows services (gaming modes)
+- Access multiple system directories (cleaning)
+- Use Windows native APIs (RAM trimming, service control)
 
-# Check status
-syscleaner gaming --status
+**This is normal for legitimate system tools.** SysCleaner is 100% safe and open source.
 
-# Disable gaming mode
-syscleaner gaming --disable
-```
-
-**Gaming Mode Status Example:**
-```
-🎮 Gaming Mode Status
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Status: ✅ ENABLED
-Active Games: 1
-  • League of Legends.exe (PID: 12345)
-    CPU: 45.2% | RAM: 2.3 GB
-
-System Resources:
-  CPU Usage: 52.1%
-  RAM Usage: 68.5% (10.9 GB / 16.0 GB)
-  Services Stopped: 6
-```
-
-### Extreme Mode Commands
-
-```bash
-# Enable extreme performance mode
-syscleaner extreme --enable
-
-# Check status
-syscleaner extreme --status
-
-# Disable and restore system
-syscleaner extreme --disable
-```
-
-### GUI Mode
-
-```bash
-# Build with GUI support first (see Build section)
-# Then launch
-syscleaner gui
-```
-
-### Optimization Commands
-
-```bash
-# Optimize everything
-syscleaner optimize --all
-
-# Optimize specific areas
-syscleaner optimize --startup        # Disable unnecessary startup programs
-syscleaner optimize --network        # Optimize network for gaming
-syscleaner optimize --registry       # Clean and compact registry
-syscleaner optimize --disk           # Optimize disk (TRIM/defrag)
-```
-
-### Daemon Commands
-
-```bash
-# Install as Windows service (requires admin)
-syscleaner daemon --install
-
-# Start the service
-syscleaner daemon --start
-
-# Check service status
-syscleaner daemon --status
-
-# Stop the service
-syscleaner daemon --stop
-
-# Restart the service
-syscleaner daemon --restart
-
-# Run in foreground (for testing)
-syscleaner daemon
-```
+If needed, add an exception in your antivirus for `SysCleaner.exe`.
 
 ---
 
 ## 📊 Performance Benchmarks
 
-Real-world improvements (varies by system):
+Real-world improvements on AMD Ryzen 5 5600X, 16GB RAM, NVMe SSD:
 
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|
@@ -483,130 +322,64 @@ Real-world improvements (varies by system):
 | **LoL FPS** | 140 fps | 158 fps | **+13%** |
 | **Network Latency** | 35 ms | 22 ms | **-37%** |
 
-*Results from AMD Ryzen 5 5600X, 16GB RAM, NVMe SSD*
-
----
-
-## ⚠️ Important Information
-
-### Administrator Rights Required
-
-Many features require administrator privileges:
-- ✅ Registry cleaning
-- ✅ Service management
-- ✅ Power plan changes
-- ✅ Network optimization
-- ✅ Daemon installation
-
-**Always run PowerShell/CMD as Administrator**
-
-### Safety First
-
-**Before first use:**
-1. Create a System Restore Point
-2. Close all important programs
-3. Test with `--dry-run` first
-4. Review what will be cleaned
-
-**SysCleaner is safe:**
-- ✅ Only deletes temp/cache files
-- ✅ Never touches personal documents
-- ✅ Open source - you can verify the code
-- ✅ No telemetry or tracking
-- ✅ Community-tested
-
-### Antivirus False Positives
-
-System optimization tools often trigger antivirus warnings because they:
-- Modify registry
-- Stop/start Windows services
-- Change system settings
-- Access multiple system directories
-
-**This is normal for legitimate system tools.** SysCleaner is 100% safe and open source.
-
-If needed, add an exception in your antivirus for `syscleaner.exe`.
+*Results vary by system configuration*
 
 ---
 
 ## 🗺️ Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the complete development plan.
+### ✅ Phase 1-3: COMPLETE
 
-### Phase 1 - Core Features ✅ **COMPLETE**
-- [x] Deep system cleaning
+- [x] Core cleaning engine with timeout protection
 - [x] Gaming mode with auto-detection
-- [x] Background daemon service
-- [x] System analyzer
-- [x] System optimizer
-- [x] CLI interface
+- [x] Extreme performance mode (60+ services)
+- [x] Modern GUI with animations
+- [x] RAM monitoring and standby trimming
+- [x] CPU priority manager
+- [x] 27+ cleaning categories
+- [x] Advanced tools (registry, DISM, debloat)
 
-### Phase 2 - Extreme Mode & Advanced Tools ✅ **COMPLETE**
-- [x] Extreme Performance Mode (stops Explorer shell)
-- [x] Anti-cheat service preservation
-- [x] Game launcher panel
-- [x] Deep registry cleaning with backup
-- [x] DISM system image scan/repair
-- [x] Windows debloater (21 apps)
-- [x] Telemetry/tracking disabler
+### 📋 Phase 4: Future Enhancements
 
-### Phase 3 - GUI & Polish ✅ **COMPLETE**
-- [x] Fyne.io GUI with dark theme
-- [x] Real-time resource dashboard
-- [x] Extreme mode toggle and game launchers
-- [x] Cleaning panel with preview
-- [x] Optimization panel
-- [x] Advanced tools panel
-- [x] Live monitoring with event log
-
-### Phase 4 - Future Enhancements 📋 **PLANNED**
-- [ ] Per-game optimization profiles
-- [ ] System tray integration
-- [ ] Configuration file support
-- [ ] MSI installer
+- [ ] Per-game optimization profiles (save/load settings)
+- [ ] System tray integration (minimize to tray)
+- [ ] Configuration file support (YAML/JSON)
+- [ ] MSI installer for easier distribution
 - [ ] Duplicate file finder
 - [ ] Driver update checking
-- [ ] Secure file deletion
+- [ ] Secure file deletion (DoD 5220.22-M)
+- [ ] Network packet optimization
+- [ ] GPU optimization profiles
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Whether you're fixing bugs, adding features, or improving documentation, your help makes SysCleaner better for everyone.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Ways to Contribute
 
-- 🐛 **Report bugs** - [Open an issue](https://github.com/YOUR_USERNAME/syscleaner/issues)
-- 💡 **Suggest features** - [Start a discussion](https://github.com/YOUR_USERNAME/syscleaner/discussions)
-- 🔧 **Submit pull requests** - See [CONTRIBUTING.md](CONTRIBUTING.md)
+- 🐛 **Report bugs** - [Open an issue](https://github.com/cullenwerks/SysCleaner/issues)
+- 💡 **Suggest features** - [Start a discussion](https://github.com/cullenwerks/SysCleaner/discussions)
+- 🔧 **Submit pull requests** - Fork, code, test, submit
 - 📝 **Improve docs** - Documentation is always appreciated
 - 🎮 **Add game support** - Add your favorite game to auto-detection
 - ⭐ **Star the repo** - Show your support!
 
 ### Quick Contribution Guide
 
-```bash
-# Fork the repo on GitHub
-
-# Clone your fork
-git clone https://github.com/YOUR_USERNAME/syscleaner.git
-cd syscleaner
-
-# Create a feature branch
+```powershell
+# Fork the repo, then:
+git clone https://github.com/YOUR_USERNAME/SysCleaner.git
+cd SysCleaner
 git checkout -b feature/amazing-feature
 
 # Install dependencies
 go mod download
 
-# Make your changes
-# ... edit files ...
-
+# Make your changes, then:
+go build -tags gui -o SysCleaner-test.exe
 # Test your changes
-go test ./...
-
-# Build and test executable
-go build -ldflags="-s -w" -o syscleaner.exe
-./syscleaner.exe --help
 
 # Commit and push
 git commit -m "Add amazing feature"
@@ -615,99 +388,60 @@ git push origin feature/amazing-feature
 # Open a Pull Request on GitHub
 ```
 
-**Build Configurations for Testing:**
-- Development: `go build -o syscleaner.exe` (faster, includes debug symbols)
-- Release: `go build -ldflags="-s -w" -o syscleaner.exe` (optimized)
-- Static: `$env:CGO_ENABLED=0; go build -ldflags="-s -w" -o syscleaner.exe` (portable)
-
-See [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md) for advanced build techniques and [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
 ---
 
 ## 🐛 Troubleshooting
 
+### GUI Won't Launch
+
+```powershell
+# Make sure you built with -tags gui:
+go build -tags gui -ldflags="-s -w -H=windowsgui" -o SysCleaner.exe
+
+# Check for errors in debug mode:
+go build -tags gui -o SysCleaner-debug.exe
+.\SysCleaner-debug.exe
+# Console window shows any errors
+```
+
 ### Gaming Mode Not Working
 
-```bash
-# Check status
-syscleaner gaming --status
+1. Make sure running as Administrator
+2. Check Dashboard for mode status
+3. Try manually (in Extreme Mode tab)
+4. Check Monitor tab for error logs
 
-# Make sure running as admin
-# Try manually stopping a service
-sc stop wuauserv
-```
+### RAM Trimming Not Working
 
-### Daemon Won't Install
+1. Only active during Extreme Mode
+2. Requires Administrator rights
+3. Check Monitor tab for RAM stats
+4. Use "Trim RAM Now" button to test manually
 
-```bash
-# Make sure running as Administrator
-# Check if service exists
-sc query SysCleaner
+### Clean Operation Hangs
 
-# Remove old installation
-sc delete SysCleaner
-
-# Reinstall
-syscleaner daemon --install
-```
-
-### Can't Delete Some Files
-
-- Close all browsers before cleaning browser caches
-- Some files may be locked by running processes
-- Reboot and try again
-- Check if antivirus is blocking
+v2.0 includes timeout protection, but if issues occur:
+1. Close all browsers before cleaning browser caches
+2. Restart and try again
+3. Clean categories individually
+4. Check Monitor tab for errors
 
 ### Build Errors
 
-**Common build issues:**
-
-```powershell
-# Issue: Dependencies not found
-# Solution: Re-download dependencies
-go mod download
-go mod verify
-go mod tidy
-
-# Issue: Build cache problems
-# Solution: Clear cache and rebuild
-go clean -cache
-go clean -modcache
-go build -o syscleaner.exe
-
-# Issue: Permission errors
-# Solution: Close running instances
-taskkill /F /IM syscleaner.exe
-# Then rebuild
-
-# Issue: Large binary size
-# Solution: Use optimization flags
-go build -ldflags="-s -w" -trimpath -o syscleaner.exe
-
-# Issue: Antivirus blocking build
-# Solution: Add exception or use static build
-$env:CGO_ENABLED=0
-go build -ldflags="-s -w" -o syscleaner.exe
-```
-
-**For detailed troubleshooting, optimization flags, cross-compilation, and CI/CD examples, see [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md)**
-
-More troubleshooting in [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md) and [docs](https://github.com/YOUR_USERNAME/syscleaner/wiki).
+See [docs/BUILDGUIDE.md](docs/BUILDGUIDE.md) for comprehensive troubleshooting:
+- GCC not found
+- Dependencies missing
+- Icon not embedding
+- Large binary size
+- And more...
 
 ---
 
 ## 📄 License
 
-**MIT License** - See [LICENSE](LICENSE) file
+**MIT License** - See [LICENSE](LICENSE)
 
-This means you can:
-- ✅ Use commercially
-- ✅ Modify
-- ✅ Distribute
-- ✅ Use privately
-- ✅ Sublicense
-
-**No restrictions. Free forever.**
+Free to use, modify, distribute commercially or privately. No restrictions.
 
 ---
 
@@ -715,19 +449,18 @@ This means you can:
 
 Built with these amazing open-source projects:
 
-- [Cobra](https://github.com/spf13/cobra) - CLI framework
+- [Cobra](https://github.com/spf13/cobra) - CLI framework (used internally)
 - [gopsutil](https://github.com/shirou/gopsutil) - System metrics
 - [kardianos/service](https://github.com/kardianos/service) - Service management
-- [Fyne](https://fyne.io/) - Cross-platform GUI toolkit (optional, with `-tags gui`)
+- [Fyne](https://fyne.io/) - Cross-platform GUI toolkit
 
 ---
 
 ## 📞 Support
 
-- 📖 **Documentation** - Check [README](README.md), [QUICKSTART](QUICKSTART.md), [BUILD](BUILD.md)
-- 💬 **Discussions** - [GitHub Discussions](https://github.com/YOUR_USERNAME/syscleaner/discussions)
-- 🐛 **Bug Reports** - [GitHub Issues](https://github.com/YOUR_USERNAME/syscleaner/issues)
-- 🔒 **Security Issues** - Email: security@example.com (private disclosure)
+- 📖 **Documentation** - [README](README.md), [BUILDGUIDE](docs/BUILDGUIDE.md)
+- 💬 **Discussions** - [GitHub Discussions](https://github.com/cullenwerks/SysCleaner/discussions)
+- 🐛 **Bug Reports** - [GitHub Issues](https://github.com/cullenwerks/SysCleaner/issues)
 
 ---
 
@@ -735,7 +468,7 @@ Built with these amazing open-source projects:
 
 **People shouldn't have to pay for basic system maintenance.**
 
-Windows users deserve free, transparent, and trustworthy utilities that actually improve their systems without:
+Windows users deserve free, transparent, and trustworthy utilities without:
 - ❌ Bundled bloatware
 - ❌ Tracking and telemetry
 - ❌ Subscription fees
@@ -751,14 +484,6 @@ If SysCleaner helps you:
 - 💬 **Tell your friends**
 - 🐛 **Report bugs**
 - 🔧 **Contribute code**
-
----
-
-## 📈 Project Stats
-
-![GitHub stars](https://img.shields.io/github/stars/YOUR_USERNAME/syscleaner?style=social)
-![GitHub forks](https://img.shields.io/github/forks/YOUR_USERNAME/syscleaner?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/YOUR_USERNAME/syscleaner?style=social)
 
 ---
 
