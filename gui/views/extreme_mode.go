@@ -90,23 +90,32 @@ func NewExtremeModePanel(w fyne.Window) fyne.CanvasObject {
 
 func (p *extremeModePanel) toggleExtremeMode() {
 	if p.isActive {
-		if err := gaming.DisableExtremeMode(); err != nil {
-			dialog.ShowError(err, p.window)
-			return
-		}
-		p.isActive = false
-		dialog.ShowInformation("Extreme Mode Disabled", "System restored to normal mode.", p.window)
-	} else {
-		dialog.ShowConfirm(
-			"Activate Extreme Performance Mode?",
-			"This will:\n\n"+
-				"  - Stop Windows Explorer (no desktop/taskbar)\n"+
-				"  - Stop all non-essential services\n"+
-				"  - Close background apps (respecting whitelist)\n"+
-				"  - Maximize game performance\n\n"+
-				"You can only launch games from this window.\nContinue?",
-			func(confirmed bool) {
-				if confirmed {
+		p.toggleBtn.Disable()
+		go func() {
+			defer p.toggleBtn.Enable()
+			if err := gaming.DisableExtremeMode(); err != nil {
+				dialog.ShowError(err, p.window)
+				return
+			}
+			p.isActive = false
+			dialog.ShowInformation("Extreme Mode Disabled", "System restored to normal mode.", p.window)
+			p.updateUI()
+		}()
+		return
+	}
+	dialog.ShowConfirm(
+		"Activate Extreme Performance Mode?",
+		"This will:\n\n"+
+			"  - Stop Windows Explorer (no desktop/taskbar)\n"+
+			"  - Stop all non-essential services\n"+
+			"  - Close background apps (respecting whitelist)\n"+
+			"  - Maximize game performance\n\n"+
+			"You can only launch games from this window.\nContinue?",
+		func(confirmed bool) {
+			if confirmed {
+				p.toggleBtn.Disable()
+				go func() {
+					defer p.toggleBtn.Enable()
 					if err := gaming.EnableExtremeMode(); err != nil {
 						dialog.ShowError(err, p.window)
 						return
@@ -114,13 +123,11 @@ func (p *extremeModePanel) toggleExtremeMode() {
 					p.isActive = true
 					dialog.ShowInformation("Extreme Mode Activated", "System optimized for maximum performance!", p.window)
 					p.updateUI()
-				}
-			},
-			p.window,
-		)
-		return // updateUI will be called in the callback
-	}
-	p.updateUI()
+				}()
+			}
+		},
+		p.window,
+	)
 }
 
 func (p *extremeModePanel) updateUI() {

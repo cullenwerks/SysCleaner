@@ -166,14 +166,13 @@ func Disable() error {
 // GetStatus returns current gaming mode status.
 func GetStatus() Status {
 	mu.Lock()
-	defer mu.Unlock()
-
 	status := Status{
 		Enabled:         gamingModeEnabled,
-		StoppedServices: stoppedServices,
+		StoppedServices: append([]string(nil), stoppedServices...),
 	}
+	mu.Unlock()
 
-	// CPU usage
+	// CPU usage — blocking call outside the lock
 	if cpuPercent, err := cpu.Percent(500*time.Millisecond, false); err == nil && len(cpuPercent) > 0 {
 		status.CPUUsage = cpuPercent[0]
 	}
