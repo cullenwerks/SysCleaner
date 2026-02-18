@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -693,9 +692,7 @@ func cleanRecycleBin(opts CleanOptions) CleanResult {
 		return result
 	}
 
-	// Use PowerShell to clear recycle bin for all drives
-	cmd := exec.Command("powershell", "-Command", "Clear-RecycleBin -Force -ErrorAction SilentlyContinue")
-	if err := cmd.Run(); err != nil {
+	if err := emptyRecycleBinNative(); err != nil {
 		result.Errors = append(result.Errors, fmt.Errorf("failed to clear recycle bin: %w", err))
 	} else {
 		log.Println("[SysCleaner] Recycle Bin cleared")
