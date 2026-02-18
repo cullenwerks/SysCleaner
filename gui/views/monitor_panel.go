@@ -62,26 +62,34 @@ func NewMonitorPanel() fyne.CanvasObject {
 	logText.SetMinRowsVisible(12)
 
 	var logMu sync.Mutex
+	var logBuffer string
+
 	addLog := func(message string, isWarning bool) {
-		logMu.Lock()
-		defer logMu.Unlock()
 		timestamp := time.Now().Format("15:04:05")
 		prefix := ""
 		if isWarning {
 			prefix = "⚠️ "
 		}
 		entry := fmt.Sprintf("[%s] %s%s\n", timestamp, prefix, message)
-		current := logText.Text
-		// Keep log manageable - trim after 5000 chars
-		if len(current) > 5000 {
-			current = current[:5000]
+
+		logMu.Lock()
+		logBuffer = entry + logBuffer
+		if len(logBuffer) > 5000 {
+			logBuffer = logBuffer[:5000]
 		}
-		logText.SetText(entry + current)
+		snapshot := logBuffer
+		logMu.Unlock()
+
+		// SetText called outside the lock — Fyne render thread cannot deadlock on logMu
+		logText.SetText(snapshot)
 	}
 
 	// Track previous network counters for rate calculation
 	var prevBytesRecv, prevBytesSent uint64
 	var prevTime time.Time
+
+	var lastCPUWarn, lastRAMWarn time.Time
+	const warnCooldown = 30 * time.Second
 
 	// Start monitoring
 	go func() {
@@ -97,7 +105,8 @@ func NewMonitorPanel() fyne.CanvasObject {
 				cpuProgress.SetValue(cpuPercent[0] / 100.0)
 				cpuLabel.SetText(fmt.Sprintf("CPU: %.1f%%", cpuPercent[0]))
 
-				if cpuPercent[0] > 90 {
+				if cpuPercent[0] > 90 && time.Since(lastCPUWarn) > warnCooldown {
+					lastCPUWarn = time.Now()
 					addLog(fmt.Sprintf("HIGH CPU: %.1f%%", cpuPercent[0]), true)
 				}
 			}
@@ -110,7 +119,8 @@ func NewMonitorPanel() fyne.CanvasObject {
 					float64(vmem.Used)/1024/1024/1024,
 					float64(vmem.Total)/1024/1024/1024))
 
-				if vmem.UsedPercent > 90 {
+				if vmem.UsedPercent > 90 && time.Since(lastRAMWarn) > warnCooldown {
+					lastRAMWarn = time.Now()
 					addLog(fmt.Sprintf("HIGH RAM: %.1f%%", vmem.UsedPercent), true)
 				}
 			}
@@ -213,7 +223,8 @@ func NewMonitorPanel() fyne.CanvasObject {
 	// Clear log button
 	clearBtn := widget.NewButton("Clear Log", func() {
 		logMu.Lock()
-		defer logMu.Unlock()
+		logBuffer = ""
+		logMu.Unlock()
 		logText.SetText("")
 	})
 
