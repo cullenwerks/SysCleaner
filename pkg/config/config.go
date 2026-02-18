@@ -30,8 +30,12 @@ type Config struct {
 }
 
 // ConfigDir returns the path to the SysCleaner configuration directory.
-// The directory is derived from os.UserConfigDir() with "SysCleaner" appended.
+// If XDG_CONFIG_HOME is set it is used as the base (enabling test isolation on
+// any platform); otherwise os.UserConfigDir() is used.
 func ConfigDir() (string, error) {
+	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+		return filepath.Join(xdg, "SysCleaner"), nil
+	}
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("unable to determine user config directory: %w", err)
