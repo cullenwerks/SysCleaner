@@ -114,18 +114,30 @@ func enablePrivilege(token windows.Token, privilegeName string) error {
 	return nil
 }
 
+// ntStatusError converts a non-zero NTSTATUS to a human-readable error.
+func ntStatusError(ret uintptr) error {
+	switch ret {
+	case 0xC0000061:
+		return fmt.Errorf("requires Administrator — right-click SysCleaner and run as Administrator (NTSTATUS: 0x%X)", ret)
+	case 0xC0000022:
+		return fmt.Errorf("access denied — run SysCleaner as Administrator (NTSTATUS: 0x%X)", ret)
+	default:
+		return fmt.Errorf("NTSTATUS: 0x%X", ret)
+	}
+}
+
 // PurgeStandbyList clears the standby memory list (the big one for gaming).
 // This is the equivalent of RAMMap's "Empty Standby List".
-// Requires SeProfileSingleProcessPrivilege.
+// Requires SeProfileSingleProcessPrivilege (Administrator).
 func PurgeStandbyList() error {
 	cmd := int32(MemoryPurgeStandbyList)
-	ret, _, err := procNtSetSystemInformation.Call(
+	ret, _, _ := procNtSetSystemInformation.Call(
 		uintptr(SystemMemoryListInformation),
 		uintptr(unsafe.Pointer(&cmd)),
 		uintptr(unsafe.Sizeof(cmd)),
 	)
 	if ret != 0 {
-		return fmt.Errorf("NtSetSystemInformation failed: %v (NTSTATUS: 0x%x)", err, ret)
+		return fmt.Errorf("NtSetSystemInformation failed: %w", ntStatusError(ret))
 	}
 	return nil
 }
@@ -134,13 +146,13 @@ func PurgeStandbyList() error {
 // This is gentler than PurgeStandbyList and less likely to cause stutter.
 func PurgeLowPriorityStandby() error {
 	cmd := int32(MemoryPurgeLowPriorityStandbyList)
-	ret, _, err := procNtSetSystemInformation.Call(
+	ret, _, _ := procNtSetSystemInformation.Call(
 		uintptr(SystemMemoryListInformation),
 		uintptr(unsafe.Pointer(&cmd)),
 		uintptr(unsafe.Sizeof(cmd)),
 	)
 	if ret != 0 {
-		return fmt.Errorf("NtSetSystemInformation failed: %v (NTSTATUS: 0x%x)", err, ret)
+		return fmt.Errorf("NtSetSystemInformation failed: %w", ntStatusError(ret))
 	}
 	return nil
 }

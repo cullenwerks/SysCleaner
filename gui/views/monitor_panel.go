@@ -28,24 +28,29 @@ func NewMonitorPanel() fyne.CanvasObject {
 	cpuProgress := widget.NewProgressBar()
 	ramProgress := widget.NewProgressBar()
 
-	// RAM Monitor Section (for Extreme Mode)
+	// RAM Monitor Section
 	ramTotalLabel := widget.NewLabel("Total: --")
 	ramUsedLabel := widget.NewLabel("Used: --")
 	ramFreeLabel := widget.NewLabel("Free: --")
 	ramStandbyLabel := widget.NewLabel("Standby: --")
 	ramTrimCountLabel := widget.NewLabel("Trim Count: 0")
-	ramLastTrimLabel := widget.NewLabel("Last Trim: Never")
+
+	ramTrimStatusLabel := widget.NewLabel("Last Trim: Never")
+	ramTrimStatusLabel.Wrapping = fyne.TextWrapWord
 
 	ramUsedBar := widget.NewProgressBar()
 	ramFreeBar := widget.NewProgressBar()
 	ramStandbyBar := widget.NewProgressBar()
 
 	trimNowBtn := widget.NewButton("Trim RAM Now", func() {
-		if err := sysmem.TrimNow(); err != nil {
-			ramLastTrimLabel.SetText(fmt.Sprintf("Trim Failed: %v", err))
-		} else {
-			ramLastTrimLabel.SetText(fmt.Sprintf("Last Trim: %s", time.Now().Format("15:04:05")))
-		}
+		ramTrimStatusLabel.SetText("Trimming...")
+		go func() {
+			if err := sysmem.TrimNow(); err != nil {
+				ramTrimStatusLabel.SetText(fmt.Sprintf("Trim failed: %v", err))
+			} else {
+				ramTrimStatusLabel.SetText(fmt.Sprintf("Last trim: %s", time.Now().Format("15:04:05")))
+			}
+		}()
 	})
 
 	logText := widget.NewMultiLineEntry()
@@ -107,22 +112,18 @@ func NewMonitorPanel() fyne.CanvasObject {
 				}
 			}
 
-			// RAM Monitor Stats (only when Extreme Mode is active)
-			if gaming.IsExtremeModeActive() {
-				stats := sysmem.GetCurrentStats()
-				ramTotalLabel.SetText(fmt.Sprintf("Total: %.2f GB", stats.TotalGB))
-				ramUsedLabel.SetText(fmt.Sprintf("Used: %.2f GB (%.1f%%)", stats.UsedGB, stats.UsedPercent))
-				ramFreeLabel.SetText(fmt.Sprintf("Free: %.2f GB (%.1f%%)", stats.FreeGB, stats.FreePercent))
-				ramStandbyLabel.SetText(fmt.Sprintf("Standby: %.2f GB (%.1f%%)", stats.StandbyGB, stats.StandbyPercent))
-				ramTrimCountLabel.SetText(fmt.Sprintf("Trim Count: %d", stats.TrimCount))
-
-				ramUsedBar.SetValue(stats.UsedPercent / 100.0)
-				ramFreeBar.SetValue(stats.FreePercent / 100.0)
-				ramStandbyBar.SetValue(stats.StandbyPercent / 100.0)
-
-				if !stats.LastTrimTime.IsZero() {
-					ramLastTrimLabel.SetText(fmt.Sprintf("Last Trim: %s ago", time.Since(stats.LastTrimTime).Round(time.Second)))
-				}
+			// RAM Monitor Stats — always update
+			stats := sysmem.GetCurrentStats()
+			ramTotalLabel.SetText(fmt.Sprintf("Total: %.2f GB", stats.TotalGB))
+			ramUsedLabel.SetText(fmt.Sprintf("Used: %.2f GB (%.1f%%)", stats.UsedGB, stats.UsedPercent))
+			ramFreeLabel.SetText(fmt.Sprintf("Free: %.2f GB (%.1f%%)", stats.FreeGB, stats.FreePercent))
+			ramStandbyLabel.SetText(fmt.Sprintf("Standby: %.2f GB (%.1f%%)", stats.StandbyGB, stats.StandbyPercent))
+			ramTrimCountLabel.SetText(fmt.Sprintf("Trim Count: %d", stats.TrimCount))
+			ramUsedBar.SetValue(stats.UsedPercent / 100.0)
+			ramFreeBar.SetValue(stats.FreePercent / 100.0)
+			ramStandbyBar.SetValue(stats.StandbyPercent / 100.0)
+			if !stats.LastTrimTime.IsZero() {
+				ramTrimStatusLabel.SetText(fmt.Sprintf("Last trim: %s ago", time.Since(stats.LastTrimTime).Round(time.Second)))
 			}
 
 			// Network usage (calculate rate)
@@ -189,32 +190,21 @@ func NewMonitorPanel() fyne.CanvasObject {
 		netSection,
 	)
 
-	// RAM Monitor Section (visible only when Extreme Mode is active)
+	// RAM Monitor Section
 	ramMonitorSection := container.NewVBox(
 		widget.NewSeparator(),
-		widget.NewLabelWithStyle("RAM Monitor (Extreme Mode)", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
-		container.NewGridWithColumns(2,
-			widget.NewLabel("Total RAM:"),
-			ramTotalLabel,
-		),
-		container.NewVBox(
-			ramUsedLabel,
-			ramUsedBar,
-		),
-		container.NewVBox(
-			ramFreeLabel,
-			ramFreeBar,
-		),
-		container.NewVBox(
-			ramStandbyLabel,
-			ramStandbyBar,
-		),
-		container.NewGridWithColumns(2,
-			ramTrimCountLabel,
-			ramLastTrimLabel,
-		),
+		widget.NewLabelWithStyle("RAM Monitor", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		container.NewBorder(nil, nil, widget.NewLabel("Total RAM:"), nil, ramTotalLabel),
+		ramUsedLabel,
+		ramUsedBar,
+		ramFreeLabel,
+		ramFreeBar,
+		ramStandbyLabel,
+		ramStandbyBar,
+		ramTrimCountLabel,
 		trimNowBtn,
-		widget.NewLabel("Note: RAM trimming happens automatically when free memory drops below 15%"),
+		ramTrimStatusLabel,
+		widget.NewLabel("Auto-trim activates when free memory drops below 15% (Extreme Mode only)"),
 	)
 
 	// Clear log button
