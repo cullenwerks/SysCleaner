@@ -5,11 +5,6 @@ import (
 	"runtime"
 )
 
-// Results holds overall optimization results.
-type Results struct {
-	StartupDisabled int
-}
-
 // StartupResult holds startup optimization results.
 type StartupResult struct {
 	Disabled int

@@ -352,15 +352,3 @@ func enableVisualEffects() {
 	setVisualEffectsNative(true)
 }
 
-// GetExtremeModeStats returns information about what extreme mode has done
-func GetExtremeModeStats() (closedApps []string, ramTrimCount int64) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	if !extremeModeActive {
-		return nil, 0
-	}
-
-	stats := memory.GetCurrentStats()
-	return extremeMode.ClosedProcesses, stats.TrimCount
-}
