@@ -59,7 +59,7 @@ func NewDashboard() fyne.CanvasObject {
 
 		for range ticker.C {
 			// CPU with smooth transition
-			if cpuPercent, err := cpu.Percent(500*time.Millisecond, false); err == nil && len(cpuPercent) > 0 {
+			if cpuPercent, err := cpu.Percent(0, false); err == nil && len(cpuPercent) > 0 {
 				targetCPU := cpuPercent[0] / 100.0
 				// Smooth interpolation
 				smoothCPU := prevCPU + (targetCPU-prevCPU)*0.3

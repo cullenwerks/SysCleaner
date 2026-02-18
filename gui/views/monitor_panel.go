@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
 
 	"syscleaner/pkg/gaming"
@@ -101,7 +100,7 @@ func NewMonitorPanel() fyne.CanvasObject {
 
 		for range ticker.C {
 			// CPU usage
-			if cpuPercent, err := cpu.Percent(500*time.Millisecond, false); err == nil && len(cpuPercent) > 0 {
+			if cpuPercent, err := cpu.Percent(0, false); err == nil && len(cpuPercent) > 0 {
 				cpuProgress.SetValue(cpuPercent[0] / 100.0)
 				cpuLabel.SetText(fmt.Sprintf("CPU: %.1f%%", cpuPercent[0]))
 
@@ -111,22 +110,17 @@ func NewMonitorPanel() fyne.CanvasObject {
 				}
 			}
 
-			// RAM usage
-			if vmem, err := mem.VirtualMemory(); err == nil {
-				ramProgress.SetValue(vmem.UsedPercent / 100.0)
-				ramLabel.SetText(fmt.Sprintf("RAM: %.1f%% (%.1f GB / %.1f GB)",
-					vmem.UsedPercent,
-					float64(vmem.Used)/1024/1024/1024,
-					float64(vmem.Total)/1024/1024/1024))
-
-				if vmem.UsedPercent > 90 && time.Since(lastRAMWarn) > warnCooldown {
-					lastRAMWarn = time.Now()
-					addLog(fmt.Sprintf("HIGH RAM: %.1f%%", vmem.UsedPercent), true)
-				}
-			}
-
-			// RAM Monitor Stats — always update
+			// RAM Monitor Stats — single VirtualMemory call via GetCurrentStats
 			stats := sysmem.GetCurrentStats()
+			ramProgress.SetValue(stats.UsedPercent / 100.0)
+			ramLabel.SetText(fmt.Sprintf("RAM: %.1f%% (%.1f GB / %.1f GB)",
+				stats.UsedPercent,
+				stats.UsedGB,
+				stats.TotalGB))
+			if stats.UsedPercent > 90 && time.Since(lastRAMWarn) > warnCooldown {
+				lastRAMWarn = time.Now()
+				addLog(fmt.Sprintf("HIGH RAM: %.1f%%", stats.UsedPercent), true)
+			}
 			ramTotalLabel.SetText(fmt.Sprintf("Total: %.2f GB", stats.TotalGB))
 			ramUsedLabel.SetText(fmt.Sprintf("Used: %.2f GB (%.1f%%)", stats.UsedGB, stats.UsedPercent))
 			ramFreeLabel.SetText(fmt.Sprintf("Free: %.2f GB (%.1f%%)", stats.FreeGB, stats.FreePercent))
