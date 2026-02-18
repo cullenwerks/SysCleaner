@@ -628,8 +628,7 @@ func cleanDNSCache(opts CleanOptions) CleanResult {
 		return result
 	}
 
-	cmd := exec.Command("ipconfig", "/flushdns")
-	if err := cmd.Run(); err != nil {
+	if err := flushDNSCacheNative(); err != nil {
 		result.Errors = append(result.Errors, fmt.Errorf("failed to flush DNS cache: %w", err))
 	} else {
 		log.Println("[SysCleaner] DNS cache flushed")
