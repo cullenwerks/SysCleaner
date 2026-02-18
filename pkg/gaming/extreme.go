@@ -3,7 +3,6 @@ package gaming
 import (
 	"fmt"
 	"log"
-	"os/exec"
 	"runtime"
 	"strings"
 	"time"
@@ -228,8 +227,9 @@ func EnableExtremeMode() error {
 	extremeMode.ShellStopped = true
 
 	// Set ultimate performance power plan
-	// Uses powercfg — no native API equivalent exists
-	runCmd("powercfg", "/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c")
+	if err := setPowerSchemeNative("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"); err != nil {
+		log.Printf("[SysCleaner] Failed to set ultimate performance power plan: %v", err)
+	}
 
 	// Disable visual effects for maximum performance using native registry API
 	disableVisualEffects()
@@ -335,14 +335,11 @@ func CloseBackgroundApps(whitelist []string) (int, []string) {
 }
 
 func stopWindowsExplorer() error {
-	// Uses taskkill for explorer.exe — explorer is a shell process that
-	// requires special handling; native TerminateProcess may not cleanly stop it
-	return runCmd("taskkill", "/F", "/IM", "explorer.exe")
+	return terminateProcessByName("explorer.exe")
 }
 
 func startWindowsExplorer() error {
-	cmd := exec.Command("explorer.exe")
-	return cmd.Start()
+	return startExplorerNative()
 }
 
 // disableVisualEffects uses native registry API on Windows, falls back to reg.exe

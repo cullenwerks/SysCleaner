@@ -3,7 +3,6 @@ package gaming
 import (
 	"fmt"
 	"log"
-	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
@@ -94,13 +93,15 @@ func Enable(config Config) error {
 
 		// Set high performance power plan
 		log.Println("[SysCleaner] Setting high performance power plan...")
-		runCmd("powercfg", "/setactive", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c")
+		if err := setPowerSchemeNative("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"); err != nil {
+			log.Printf("[SysCleaner] Failed to set high performance power plan: %v", err)
+		}
 
 		// Optimize network
 		log.Println("[SysCleaner] Optimizing network settings...")
-		runCmd("netsh", "int", "tcp", "set", "global", "autotuninglevel=normal")
-		runCmd("netsh", "int", "tcp", "set", "global", "chimney=enabled")
-		runCmd("netsh", "int", "tcp", "set", "global", "dca=enabled")
+		if err := setTCPGamingParams(); err != nil {
+			log.Printf("[SysCleaner] Failed to set TCP gaming params: %v", err)
+		}
 	}
 
 	gamingModeEnabled = true
@@ -140,7 +141,9 @@ func Disable() error {
 
 		// Restore balanced power plan
 		log.Println("[SysCleaner] Restoring balanced power plan...")
-		runCmd("powercfg", "/setactive", "381b4222-f694-41f0-9685-ff5bb260df2e")
+		if err := setPowerSchemeNative("381b4222-f694-41f0-9685-ff5bb260df2e"); err != nil {
+			log.Printf("[SysCleaner] Failed to restore balanced power plan: %v", err)
+		}
 	}
 
 	// Restore process priorities using native Windows API
@@ -290,10 +293,3 @@ func startService(name string) error {
 	return startServiceNative(name)
 }
 
-func runCmd(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	if runtime.GOOS == "windows" {
-		cmd.SysProcAttr = getSysProcAttr()
-	}
-	return cmd.Run()
-}
