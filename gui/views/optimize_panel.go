@@ -25,12 +25,31 @@ func NewOptimizePanel() fyne.CanvasObject {
 	statusLabel := widget.NewLabel("Ready.")
 
 	// Startup optimization
-	startupBtn := widget.NewButton("Optimize Startup Programs", func() {
+	startupBtn := widget.NewButton("Optimize Startup Programs", nil)
+	networkBtn := widget.NewButton("Optimize Network", nil)
+	diskBtn := widget.NewButton("Optimize Disk", nil)
+	allBtn := widget.NewButton("Run All Optimizations", nil)
+
+	allBtns := []*widget.Button{startupBtn, networkBtn, diskBtn, allBtn}
+	disableAll := func() {
+		for _, b := range allBtns {
+			b.Disable()
+		}
+	}
+	enableAll := func() {
+		for _, b := range allBtns {
+			b.Enable()
+		}
+	}
+
+	startupBtn.OnTapped = func() {
+		disableAll()
 		progressBar.Show()
 		progressBar.Start()
 		statusLabel.SetText("Optimizing startup programs...")
 
 		go func() {
+			defer enableAll()
 			result := optimizer.OptimizeStartup()
 			progressBar.Stop()
 			progressBar.Hide()
@@ -46,16 +65,18 @@ func NewOptimizePanel() fyne.CanvasObject {
 			}
 			resultText.SetText(text)
 		}()
-	})
+	}
 	startupBtn.Importance = widget.HighImportance
 
 	// Network optimization
-	networkBtn := widget.NewButton("Optimize Network", func() {
+	networkBtn.OnTapped = func() {
+		disableAll()
 		progressBar.Show()
 		progressBar.Start()
 		statusLabel.SetText("Optimizing network settings...")
 
 		go func() {
+			defer enableAll()
 			result := optimizer.OptimizeNetwork()
 			progressBar.Stop()
 			progressBar.Hide()
@@ -67,16 +88,18 @@ func NewOptimizePanel() fyne.CanvasObject {
 			}
 			resultText.SetText(text)
 		}()
-	})
+	}
 	networkBtn.Importance = widget.HighImportance
 
 	// Disk optimization
-	diskBtn := widget.NewButton("Optimize Disk", func() {
+	diskBtn.OnTapped = func() {
+		disableAll()
 		progressBar.Show()
 		progressBar.Start()
 		statusLabel.SetText("Optimizing disk...")
 
 		go func() {
+			defer enableAll()
 			result := optimizer.OptimizeDisk()
 			progressBar.Stop()
 			progressBar.Hide()
@@ -96,16 +119,18 @@ func NewOptimizePanel() fyne.CanvasObject {
 			}
 			resultText.SetText(text)
 		}()
-	})
+	}
 	diskBtn.Importance = widget.HighImportance
 
 	// Run all
-	allBtn := widget.NewButton("Run All Optimizations", func() {
+	allBtn.OnTapped = func() {
+		disableAll()
 		progressBar.Show()
 		progressBar.Start()
 		statusLabel.SetText("Running all optimizations...")
 
 		go func() {
+			defer enableAll()
 			text := ""
 
 			// Startup
@@ -130,7 +155,7 @@ func NewOptimizePanel() fyne.CanvasObject {
 			statusLabel.SetText("All optimizations complete!")
 			resultText.SetText(text)
 		}()
-	})
+	}
 	allBtn.Importance = widget.WarningImportance
 
 	buttonGrid := container.NewGridWithColumns(3,

@@ -130,12 +130,29 @@ func NewCleanPanel() fyne.CanvasObject {
 	}
 
 	// Analyze button (preview / dry run)
-	analyzeBtn := widget.NewButton("Analyze (Preview)", func() {
+	analyzeBtn := widget.NewButton("Analyze (Preview)", nil)
+	cleanBtn := widget.NewButton("Clean Now", nil)
+
+	allBtns := []*widget.Button{analyzeBtn, cleanBtn}
+	disableAll := func() {
+		for _, b := range allBtns {
+			b.Disable()
+		}
+	}
+	enableAll := func() {
+		for _, b := range allBtns {
+			b.Enable()
+		}
+	}
+
+	analyzeBtn.OnTapped = func() {
+		disableAll()
 		progressBar.Show()
 		progressBar.Start()
 		statusLabel.SetText("Analyzing system for cleanable files...")
 
 		go func() {
+			defer enableAll()
 			opts := buildOpts(true)
 			result := cleaner.PerformClean(opts)
 			progressBar.Stop()
@@ -148,15 +165,17 @@ func NewCleanPanel() fyne.CanvasObject {
 				cleaner.FormatBytes(result.SpaceFreed),
 				result.Duration))
 		}()
-	})
+	}
 
 	// Clean button
-	cleanBtn := widget.NewButton("Clean Now", func() {
+	cleanBtn.OnTapped = func() {
+		disableAll()
 		progressBar.Show()
 		progressBar.Start()
 		statusLabel.SetText("Cleaning system...")
 
 		go func() {
+			defer enableAll()
 			opts := buildOpts(false)
 			result := cleaner.PerformClean(opts)
 			progressBar.Stop()
@@ -181,7 +200,7 @@ func NewCleanPanel() fyne.CanvasObject {
 			}
 			resultText.SetText(text)
 		}()
-	})
+	}
 	cleanBtn.Importance = widget.HighImportance
 
 	buttonRow := container.NewGridWithColumns(2, analyzeBtn, cleanBtn)

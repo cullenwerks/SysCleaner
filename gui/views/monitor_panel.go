@@ -42,16 +42,19 @@ func NewMonitorPanel() fyne.CanvasObject {
 	ramFreeBar := widget.NewProgressBar()
 	ramStandbyBar := widget.NewProgressBar()
 
-	trimNowBtn := widget.NewButton("Trim RAM Now", func() {
+	trimNowBtn := widget.NewButton("Trim RAM Now", nil)
+	trimNowBtn.OnTapped = func() {
+		trimNowBtn.Disable()
 		ramTrimStatusLabel.SetText("Trimming...")
 		go func() {
+			defer trimNowBtn.Enable()
 			if err := sysmem.TrimNow(); err != nil {
 				ramTrimStatusLabel.SetText(fmt.Sprintf("Trim failed: %v", err))
 			} else {
 				ramTrimStatusLabel.SetText(fmt.Sprintf("Last trim: %s", time.Now().Format("15:04:05")))
 			}
 		}()
-	})
+	}
 
 	logText := widget.NewMultiLineEntry()
 	logText.SetPlaceHolder("System events will appear here...")
