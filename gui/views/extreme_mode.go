@@ -4,7 +4,6 @@ package views
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -243,8 +242,7 @@ func createGameLaunchers(w fyne.Window) fyne.CanvasObject {
 		exe := launcher.exe
 
 		btn := widget.NewButton(fmt.Sprintf("Launch %s", name), func() {
-			cmd := exec.Command(exe)
-			if err := cmd.Start(); err != nil {
+			if err := launchExeNative(exe); err != nil {
 				dialog.ShowError(fmt.Errorf("failed to launch %s: %v", name, err), w)
 			} else {
 				dialog.ShowInformation("Launched", fmt.Sprintf("%s started successfully!", name), w)
