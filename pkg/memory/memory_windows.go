@@ -262,8 +262,12 @@ func StartContinuousMonitor(statsCallback func(MemoryStats)) {
 					lastCleanTime = time.Now()
 					trimCountTotal++
 
-					// Check if that was enough after a brief wait
-					time.Sleep(2 * time.Second)
+					// Check if that was enough after a brief wait (interruptible)
+					select {
+					case <-monitorDone:
+						return
+					case <-time.After(2 * time.Second):
+					}
 					if vmem2, err := mem.VirtualMemory(); err == nil {
 						newFreePercent := (float64(vmem2.Available) / float64(vmem2.Total)) * 100
 						if newFreePercent < FreeMemoryThresholdPercent {

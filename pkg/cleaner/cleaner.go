@@ -108,7 +108,6 @@ type CleanResult struct {
 }
 
 const (
-	fileTimeout      = 2 * time.Second  // Per-file operation timeout
 	dirTimeout       = 30 * time.Second // Per-directory timeout
 	defaultOpTimeout = 5 * time.Minute  // Overall operation timeout
 )
@@ -296,21 +295,6 @@ func cleanCategory(ctx context.Context, category string, fn func(CleanOptions) C
 	}
 }
 
-// removeWithTimeout attempts to remove a file with a timeout
-func removeWithTimeout(path string, timeout time.Duration) error {
-	done := make(chan error, 1)
-	go func() {
-		done <- os.Remove(path)
-	}()
-
-	select {
-	case err := <-done:
-		return err
-	case <-time.After(timeout):
-		return fmt.Errorf("timeout removing %s", path)
-	}
-}
-
 // cleanDirectory removes files in a directory with timeouts and proper error handling
 func cleanDirectory(dir string, maxAge time.Duration, dryRun bool) CleanResult {
 	result := CleanResult{}
@@ -372,7 +356,7 @@ func cleanDirectoryInternal(dir string, maxAge time.Duration, dryRun bool) Clean
 			result.FilesDeleted++
 			result.SpaceFreed += info.Size()
 		} else {
-			if err := removeWithTimeout(path, fileTimeout); err != nil {
+			if err := os.Remove(path); err != nil {
 				ce := classifyError(path, err)
 				switch ce.Type {
 				case ErrorLocked, ErrorTimeout:
@@ -482,7 +466,7 @@ func cleanCrashDumps(opts CleanOptions) CleanResult {
 				result.FilesDeleted++
 				result.SpaceFreed += info.Size()
 			} else {
-				if err := removeWithTimeout(memoryDump, fileTimeout); err == nil {
+				if err := os.Remove(memoryDump); err == nil {
 					result.FilesDeleted++
 					result.SpaceFreed += info.Size()
 				}
@@ -546,7 +530,7 @@ func cleanThumbnailCache(opts CleanOptions) CleanResult {
 				result.FilesDeleted++
 				result.SpaceFreed += info.Size()
 			} else {
-				if err := removeWithTimeout(fpath, fileTimeout); err != nil {
+				if err := os.Remove(fpath); err != nil {
 					if strings.Contains(err.Error(), "timeout") {
 						result.SkippedFiles++
 					} else {
@@ -578,7 +562,7 @@ func cleanIconCache(opts CleanOptions) CleanResult {
 			result.FilesDeleted++
 			result.SpaceFreed += info.Size()
 		} else {
-			if err := removeWithTimeout(iconCacheFile, fileTimeout); err == nil {
+			if err := os.Remove(iconCacheFile); err == nil {
 				result.FilesDeleted++
 				result.SpaceFreed += info.Size()
 			}
