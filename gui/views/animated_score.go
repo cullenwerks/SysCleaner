@@ -5,6 +5,8 @@ package views
 import (
 	"fmt"
 	"image/color"
+	"math"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -15,6 +17,7 @@ import (
 // ScoreRing is an animated circular progress indicator for the performance score
 type ScoreRing struct {
 	widget.BaseWidget
+	mu           sync.Mutex
 	score        int
 	displayScore float64
 	animating    bool
@@ -40,51 +43,65 @@ func (s *ScoreRing) SetScore(score int) {
 	if score > 100 {
 		score = 100
 	}
-
+	s.mu.Lock()
 	s.score = score
-	if !s.animating {
+	alreadyRunning := s.animating
+	s.mu.Unlock()
+	if !alreadyRunning {
 		go s.animateTo(score)
 	}
 }
 
 // GetScore returns the current target score
 func (s *ScoreRing) GetScore() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.score
 }
 
 func (s *ScoreRing) animateTo(target int) {
+	s.mu.Lock()
 	s.animating = true
-	defer func() { s.animating = false }()
+	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		s.animating = false
+		s.mu.Unlock()
+	}()
 
 	targetFloat := float64(target)
-	step := 0.8
-
-	for s.displayScore < targetFloat-0.5 || s.displayScore > targetFloat+0.5 {
-		if s.displayScore < targetFloat {
-			s.displayScore += step
-			if s.displayScore > targetFloat {
-				s.displayScore = targetFloat
-			}
-		} else {
-			s.displayScore -= step
-			if s.displayScore < targetFloat {
-				s.displayScore = targetFloat
-			}
+	for {
+		s.mu.Lock()
+		cur := s.displayScore
+		s.mu.Unlock()
+		if math.Abs(cur-targetFloat) < 0.5 {
+			break
 		}
-
+		s.mu.Lock()
+		if s.displayScore < targetFloat {
+			s.displayScore = math.Min(s.displayScore+0.8, targetFloat)
+		} else {
+			s.displayScore = math.Max(s.displayScore-0.8, targetFloat)
+		}
+		s.mu.Unlock()
 		s.Refresh()
 		time.Sleep(15 * time.Millisecond)
 	}
-
+	s.mu.Lock()
 	s.displayScore = targetFloat
+	s.mu.Unlock()
 	s.Refresh()
 }
 
 // CreateRenderer creates the widget renderer
 func (s *ScoreRing) CreateRenderer() fyne.WidgetRenderer {
-	s.ring = canvas.NewCircle(s.getColorForScore())
+	s.mu.Lock()
+	scoreColor := s.getColorForScore()
+	s.mu.Unlock()
+
+	s.ring = canvas.NewCircle(scoreColor)
 	s.ring.StrokeWidth = 10
-	s.ring.StrokeColor = s.getColorForScore()
+	s.ring.StrokeColor = scoreColor
 	s.ring.FillColor = color.Transparent
 
 	s.text = canvas.NewText("--", color.White)
@@ -99,6 +116,8 @@ func (s *ScoreRing) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
+// getColorForScore returns the color for the current displayScore.
+// Caller must hold s.mu.
 func (s *ScoreRing) getColorForScore() color.Color {
 	score := int(s.displayScore)
 	switch {
@@ -136,21 +155,26 @@ func (r *scoreRingRenderer) MinSize() fyne.Size {
 }
 
 func (r *scoreRingRenderer) Refresh() {
+	// Snapshot fields under lock before using them in render calls
+	r.score.mu.Lock()
+	ds := r.score.displayScore
+	scoreColor := r.score.getColorForScore()
+	r.score.mu.Unlock()
+
 	// Update text
-	if r.score.displayScore > 0 {
-		r.text.Text = fmt.Sprintf("%d", int(r.score.displayScore))
+	if ds > 0 {
+		r.text.Text = fmt.Sprintf("%d", int(ds))
 	} else {
 		r.text.Text = "--"
 	}
 
 	// Update color based on current score
-	scoreColor := r.score.getColorForScore()
 	r.ring.StrokeColor = scoreColor
 	r.text.Color = scoreColor
 
 	// Update stroke to create "filling" effect
 	// The ring appears to fill as the score increases
-	percentage := r.score.displayScore / 100.0
+	percentage := ds / 100.0
 	if percentage > 0 {
 		r.ring.StrokeWidth = float32(10 + (percentage * 5)) // Thicker stroke as score increases
 	}
