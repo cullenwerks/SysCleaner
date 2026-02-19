@@ -49,7 +49,7 @@ func configFilePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, "config.yaml"), nil
+	return filepath.Join(dir, "config.json"), nil
 }
 
 // LoadConfig reads the configuration from disk. If the file does not exist,
@@ -91,7 +91,7 @@ func SaveConfig(cfg *Config) error {
 		return fmt.Errorf("marshaling config: %w", err)
 	}
 
-	path := filepath.Join(dir, "config.yaml")
+	path := filepath.Join(dir, "config.json")
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
 	}

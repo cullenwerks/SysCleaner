@@ -17,6 +17,7 @@ func NewOptimizePanel() fyne.CanvasObject {
 	resultText := widget.NewMultiLineEntry()
 	resultText.SetPlaceHolder("Optimization results will appear here...")
 	resultText.Disable()
+	resultText.SetMinRowsVisible(10)
 
 	progressBar := widget.NewProgressBarInfinite()
 	progressBar.Stop()
